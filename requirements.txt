@@ -1,0 +1,7 @@
+Flask
+Flask-SQLAlchemy
+Authlib
+bcrypt
+pusher
+gunicorn
+psycopg2-binary
