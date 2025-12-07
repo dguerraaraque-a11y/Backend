@@ -61,8 +61,8 @@ class ChatMessage(db.Model):
 # están definidos en las variables de entorno de Vercel.
 oauth.register(
     name='google',
-    client_id=os.environ.get('GOOGLE_CLIENT_ID', '71330665801-6joq0752g7hhhp2hmld06hrfg67rhji0.apps.googleusercontent.com'),
-    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET', 'GOCSPX-PbP6MmjFDHa3AhpRLF5dmP2atp-'),
+    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
     # Usar server_metadata_url es la forma moderna y recomendada.
     # Descubre automáticamente los endpoints de Google.
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
@@ -71,8 +71,8 @@ oauth.register(
 
 oauth.register(
     name='microsoft',
-    client_id=os.environ.get('MICROSOFT_CLIENT_ID', '4f73ba40-20f8-4625-aca8-dc876ae081c7'),
-    client_secret=os.environ.get('MICROSOFT_CLIENT_SECRET', 'dbaef09f-d1c9-41c5-9417-3ec09c99583a'),
+    client_id=os.environ.get('MICROSOFT_CLIENT_ID'),
+    client_secret=os.environ.get('MICROSOFT_CLIENT_SECRET'),
     # Usar server_metadata_url para que authlib descubra los endpoints automáticamente.
     server_metadata_url='https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
     client_kwargs={'scope': 'openid profile email User.Read'},
@@ -266,19 +266,23 @@ def auth_google():
     if not social_id:
         return 'Error: No se pudo obtener el ID de usuario de Google.', 400
 
-    user = User.query.filter_by(provider='google', social_id=social_id).first()
-    if not user:
-        username = user_info.get('name', user_info.get('given_name', f"user_{social_id[:8]}"))
-        if User.query.filter_by(username=username).first():
-            username = f"{username}_{social_id[:4]}"
-        new_user = User(username=username, provider='google', social_id=social_id, avatar_url=avatar_url)
-        db.session.add(new_user)
-        db.session.commit()
-        user = new_user
+    try:
+        user = User.query.filter_by(provider='google', social_id=social_id).first()
+        if not user:
+            username = user_info.get('name', user_info.get('given_name', f"user_{social_id[:8]}"))
+            if User.query.filter_by(username=username).first():
+                username = f"{username}_{social_id[:4]}"
+            new_user = User(username=username, provider='google', social_id=social_id, avatar_url=avatar_url)
+            db.session.add(new_user)
+            db.session.commit()
+            user = new_user
 
-    session['logged_in'] = True
-    session['username'] = user.username
-    return redirect(FRONTEND_DASHBOARD_URL)
+        session['logged_in'] = True
+        session['username'] = user.username
+        return redirect(FRONTEND_DASHBOARD_URL)
+    finally:
+        # Asegura que la sesión de la DB se cierre correctamente para evitar errores 500.
+        db.session.remove()
 
 @app.route('/login/microsoft')
 def login_microsoft():
@@ -308,19 +312,23 @@ def auth_microsoft():
     if not social_id:
         return 'Error: No se pudo obtener el ID de usuario de Microsoft.', 400
 
-    user = User.query.filter_by(provider='microsoft', social_id=social_id).first()
-    if not user:
-        username = user_info.get('displayName', f"user_{social_id[:8]}")
-        if User.query.filter_by(username=username).first():
-            username = f"{username}_{social_id[:4]}"
-        new_user = User(username=username, provider='microsoft', social_id=social_id, avatar_url=avatar_url)
-        db.session.add(new_user)
-        db.session.commit()
-        user = new_user
+    try:
+        user = User.query.filter_by(provider='microsoft', social_id=social_id).first()
+        if not user:
+            username = user_info.get('displayName', f"user_{social_id[:8]}")
+            if User.query.filter_by(username=username).first():
+                username = f"{username}_{social_id[:4]}"
+            new_user = User(username=username, provider='microsoft', social_id=social_id, avatar_url=avatar_url)
+            db.session.add(new_user)
+            db.session.commit()
+            user = new_user
 
-    session['logged_in'] = True
-    session['username'] = user.username
-    return redirect(FRONTEND_DASHBOARD_URL)
+        session['logged_in'] = True
+        session['username'] = user.username
+        return redirect(FRONTEND_DASHBOARD_URL)
+    finally:
+        # Asegura que la sesión de la DB se cierre correctamente.
+        db.session.remove()
 
 # --------------------------------------------------------------------------------------
 # --- RUTAS PERSONALIZADAS PARA SERVIR ARCHIVOS ESTÁTICOS (SOLUCIÓN CSS/JS/IMAGENES) ---
