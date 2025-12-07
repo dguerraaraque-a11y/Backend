@@ -13,6 +13,9 @@ import pusher # Librería para la solución del chat
 # Si no está en Vercel, intenta usar SQLite (que fallará, pero es el fallback local).
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///glauncher.db')
 
+# URL del frontend para redirecciones seguras
+FRONTEND_DASHBOARD_URL = os.environ.get('FRONTEND_URL', 'http://127.0.0.1:5500') + '/dashboard.html'
+
 # Configuración de Pusher (Claves leídas de Vercel)
 pusher_client = pusher.Pusher(
     app_id=os.environ.get('PUSHER_APP_ID', '1234567'),  
@@ -60,22 +63,19 @@ oauth.register(
     name='google',
     client_id=os.environ.get('GOOGLE_CLIENT_ID', '71330665801-6joq0752g7hhhp2hmld06hrfg67rhji0.apps.googleusercontent.com'),
     client_secret=os.environ.get('GOOGLE_CLIENT_SECRET', 'GOCSPX-PbP6MmjFDHa3AhpRLF5dmP2atp-'),
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    api_base_url='https://www.googleapis.com/oauth2/v1/',
-    userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',
+    # Usar server_metadata_url es la forma moderna y recomendada.
+    # Descubre automáticamente los endpoints de Google.
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={'scope': 'openid email profile'},
-    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration'
 )
 
 oauth.register(
     name='microsoft',
     client_id=os.environ.get('MICROSOFT_CLIENT_ID', '4f73ba40-20f8-4625-aca8-dc876ae081c7'),
-    client_secret=os.environ.get('MICROSOFT_CLIENT_SECRET', 'dbaef09f-d1c9-41c5-9417-3ec09c99583a'), 
-    authorize_url='https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-    access_token_url='https://login.microsoftonline.com/common/oauth2/v2.0/token',
-    userinfo_endpoint='https://graph.microsoft.com/v1.0/me',
-    client_kwargs={'scope': 'User.Read'},
+    client_secret=os.environ.get('MICROSOFT_CLIENT_SECRET', 'dbaef09f-d1c9-41c5-9417-3ec09c99583a'),
+    # Usar server_metadata_url para que authlib descubra los endpoints automáticamente.
+    server_metadata_url='https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid profile email User.Read'},
 )
 
 # --- RUTAS DE LA APLICACIÓN ---
@@ -257,23 +257,27 @@ def login_google():
 @app.route('/login/google/callback')
 def auth_google():
     token = oauth.google.authorize_access_token()
-    user_info = oauth.google.get('userinfo').json() 
+    # Usar el método userinfo() es más robusto y recomendado.
+    user_info = oauth.google.userinfo()
     social_id = user_info.get('sub')
-    avatar = user_info.get('picture') 
+    avatar_url = user_info.get('picture')
+
     if not social_id:
         return 'Error: No se pudo obtener el ID de usuario de Google.', 400
+
     user = User.query.filter_by(provider='google', social_id=social_id).first()
     if not user:
         username = user_info.get('name', user_info.get('given_name', f"user_{social_id[:8]}"))
         if User.query.filter_by(username=username).first():
             username = f"{username}_{social_id[:4]}"
-        new_user = User(username=username, provider='google', social_id=social_id, avatar_url=avatar)
+        new_user = User(username=username, provider='google', social_id=social_id, avatar_url=avatar_url)
         db.session.add(new_user)
         db.session.commit()
         user = new_user
+
     session['logged_in'] = True
     session['username'] = user.username
-    return redirect(url_for('dashboard'))
+    return redirect(FRONTEND_DASHBOARD_URL)
 
 @app.route('/login/microsoft')
 def login_microsoft():
@@ -282,23 +286,39 @@ def login_microsoft():
 
 @app.route('/login/microsoft/callback')
 def auth_microsoft():
+    # ¡CORREGIDO! Usar oauth.microsoft en lugar de oauth.google
     token = oauth.microsoft.authorize_access_token()
-    user_info = oauth.microsoft.get('me').json()
+    # Usar el método userinfo() es más robusto y recomendado.
+    user_info = oauth.microsoft.userinfo()
     social_id = user_info.get('id')
+    avatar_url = None
+
+    # Intenta obtener la foto de perfil de Microsoft Graph API
+    try:
+        photo_response = oauth.microsoft.get('https://graph.microsoft.com/v1.0/me/photo/$value', stream=True)
+        if photo_response.status_code == 200:
+            # En un futuro, aquí se podría procesar y guardar la imagen.
+            # Por ahora, la funcionalidad para obtener la URL directa es compleja, se omite.
+            pass
+    except Exception:
+        pass # Si no hay foto o hay un error, no hacemos nada.
+
     if not social_id:
         return 'Error: No se pudo obtener el ID de usuario de Microsoft.', 400
+
     user = User.query.filter_by(provider='microsoft', social_id=social_id).first()
     if not user:
         username = user_info.get('displayName', f"user_{social_id[:8]}")
         if User.query.filter_by(username=username).first():
             username = f"{username}_{social_id[:4]}"
-        new_user = User(username=username, provider='microsoft', social_id=social_id)
+        new_user = User(username=username, provider='microsoft', social_id=social_id, avatar_url=avatar_url)
         db.session.add(new_user)
         db.session.commit()
         user = new_user
+
     session['logged_in'] = True
     session['username'] = user.username
-    return redirect(url_for('dashboard'))
+    return redirect(FRONTEND_DASHBOARD_URL)
 
 # --------------------------------------------------------------------------------------
 # --- RUTAS PERSONALIZADAS PARA SERVIR ARCHIVOS ESTÁTICOS (SOLUCIÓN CSS/JS/IMAGENES) ---
