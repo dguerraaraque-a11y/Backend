@@ -257,8 +257,9 @@ def login_google():
 @app.route('/login/google/callback')
 def auth_google():
     token = oauth.google.authorize_access_token()
-    # Usar el método userinfo() es más robusto y recomendado.
-    user_info = oauth.google.userinfo()
+    # ¡CORRECCIÓN CRÍTICA! Pasar el token explícitamente a userinfo()
+    # para asegurar la robustez en entornos de producción como Render.
+    user_info = oauth.google.userinfo(token=token)
     social_id = user_info.get('sub')
     avatar_url = user_info.get('picture')
 
@@ -288,8 +289,9 @@ def login_microsoft():
 def auth_microsoft():
     # ¡CORREGIDO! Usar oauth.microsoft en lugar de oauth.google
     token = oauth.microsoft.authorize_access_token()
-    # Usar el método userinfo() es más robusto y recomendado.
-    user_info = oauth.microsoft.userinfo()
+    # ¡CORRECCIÓN CRÍTICA! Pasar el token explícitamente a userinfo()
+    # para asegurar la robustez en entornos de producción.
+    user_info = oauth.microsoft.userinfo(token=token)
     social_id = user_info.get('id')
     avatar_url = None
 
