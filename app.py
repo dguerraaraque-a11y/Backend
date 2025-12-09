@@ -10,6 +10,8 @@ from functools import wraps
 import google.generativeai as genai
 import json
 from PIL import Image
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 # --- INICIALIZACIÓN DE LA APLICACIÓN ---
 
@@ -445,6 +447,34 @@ def gemini_chat():
     except Exception as e:
         return jsonify({'answer': f"Ocurrió un error al procesar la solicitud: {e}"}), 500
 
+@app.route('/api/youtube/search', methods=['GET'])
+@admin_required
+def youtube_search():
+    """Busca videos en YouTube usando la API de YouTube Data v3."""
+    query = request.args.get('q')
+    api_key = os.environ.get('YOUTUBE_API_KEY')
+
+    if not query:
+        return jsonify({'error': 'El parámetro de búsqueda "q" es requerido.'}), 400
+    if not api_key:
+        return jsonify({'error': 'La clave de API de YouTube no está configurada en el servidor.'}), 500
+
+    try:
+        youtube = build('youtube', 'v3', developerKey=api_key)
+        search_response = youtube.search().list(
+            q=query,
+            part='snippet',
+            maxResults=10,
+            type='video'
+        ).execute()
+
+        videos = [{'title': item['snippet']['title'], 'videoId': item['id']['videoId']} for item in search_response.get('items', [])]
+        return jsonify(videos)
+    except HttpError as e:
+        return jsonify({'error': f'Ocurrió un error con la API de YouTube: {e.resp.status} {e.content}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Ocurrió un error inesperado: {str(e)}'}), 500
+
 @app.route('/api/admin/status')
 @admin_required
 def get_system_status():
@@ -452,7 +482,8 @@ def get_system_status():
     status = {
         'backend': {'status': 'online', 'message': 'API operativa.'},
         'gemini': {'status': 'loading', 'message': 'Comprobando...'},
-        'pusher': {'status': 'loading', 'message': 'Comprobando...'}
+        'pusher': {'status': 'loading', 'message': 'Comprobando...'},
+        'youtube': {'status': 'loading', 'message': 'Comprobando...'}
     }
 
     # Comprobar Gemini
@@ -478,6 +509,21 @@ def get_system_status():
             status['pusher'] = {'status': 'offline', 'message': f'Error de conexión: {e}'}
     else:
         status['pusher'] = {'status': 'offline', 'message': 'Claves no configuradas.'}
+
+    # Comprobar YouTube API
+    yt_api_key = os.environ.get('YOUTUBE_API_KEY')
+    if not yt_api_key:
+        status['youtube'] = {'status': 'offline', 'message': 'Clave API no configurada.'}
+    else:
+        try:
+            youtube = build('youtube', 'v3', developerKey=yt_api_key)
+            # Hacemos una petición simple para verificar la clave
+            youtube.search().list(q='test', part='id', maxResults=1).execute()
+            status['youtube'] = {'status': 'online', 'message': 'Servicio operativo.'}
+        except HttpError as e:
+            status['youtube'] = {'status': 'offline', 'message': f'Clave API inválida o error de servicio.'}
+        except Exception as e:
+            status['youtube'] = {'status': 'offline', 'message': f'Error de conexión: {str(e)}'}
 
     return jsonify(status)
 
