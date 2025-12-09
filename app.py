@@ -29,8 +29,19 @@ pusher_client = pusher.Pusher(
     ssl=True
 )
 
-# Inicialización de Flask: configuración simple para Serverless
-app = Flask(__name__) 
+# --- CONFIGURACIÓN DE RUTAS ABSOLUTAS PARA FLASK ---
+# Esto soluciona el error 'TemplateNotFound' en Render.
+# 1. Obtenemos la ruta absoluta del directorio donde está este script (la carpeta BACKEND).
+current_dir = os.path.abspath(os.path.dirname(__file__))
+# 2. Construimos la ruta a la carpeta raíz del proyecto (GLAUNCHER-WEB), que está un nivel "arriba" de BACKEND.
+root_dir = os.path.join(current_dir, '..')
+
+# 3. Inicializamos Flask, diciéndole explícitamente dónde encontrar los archivos.
+app = Flask(__name__,
+            template_folder=root_dir,  # Busca archivos HTML como 'index.html' en la carpeta raíz.
+            static_folder=root_dir,    # Sirve archivos desde la raíz.
+            static_url_path=''         # Permite que las URLs como /css/styles.css funcionen directamente.
+           )
 oauth = OAuth(app)
 
 # Claves y DB
@@ -470,6 +481,14 @@ def set_gemini_api_key():
 # --- Rutas para OAuth (Google y Microsoft) ---
 @app.route('/login/google')
 def login_google():
+    # ¡CORRECCIÓN! Asegurarse de que la URI de redirección sea HTTPS en producción.
+    # Render y otros proveedores usan un proxy inverso, por lo que _external=True puede no ser suficiente.
+    # Forzar el esquema a https es más robusto.
+    redirect_uri = url_for('auth_google', _external=True, _scheme='https')
+    return oauth.google.authorize_redirect(redirect_uri)
+
+@app.route('/login/google/callback')
+def auth_google():
     redirect_uri = url_for('auth_google', _external=True)
     return oauth.google.authorize_redirect(redirect_uri)
 
@@ -505,7 +524,8 @@ def auth_google():
 
 @app.route('/login/microsoft')
 def login_microsoft():
-    redirect_uri = url_for('auth_microsoft', _external=True)
+    # Forzar HTTPS para la URI de redirección de Microsoft también.
+    redirect_uri = url_for('auth_microsoft', _external=True, _scheme='https')
     return oauth.microsoft.authorize_redirect(redirect_uri)
 
 @app.route('/login/microsoft/callback')
@@ -549,39 +569,15 @@ def auth_microsoft():
         # Asegura que la sesión de la DB se cierre correctamente.
         db.session.remove()
 
-# --------------------------------------------------------------------------------------
-# --- RUTAS PERSONALIZADAS PARA SERVIR ARCHIVOS ESTÁTICOS (SOLUCIÓN CSS/JS/IMAGENES) ---
-# --------------------------------------------------------------------------------------
-# Estas rutas mapean las URL como /css/style.css a la carpeta física 'css' en la raíz.
-@app.route('/css/<path:filename>')
-def serve_css(filename):
-    """Sirve archivos CSS desde la carpeta 'css'."""
-    return send_from_directory('css', filename)
+# --- FUNCIÓN PARA CREAR TABLAS ---
+def create_tables():
+    """Crea todas las tablas de la base de datos si no existen."""
+    with app.app_context():
+        db.create_all()
 
-@app.route('/js/<path:filename>')
-def serve_js(filename):
-    """Sirve archivos JS desde la carpeta 'js'."""
-    return send_from_directory('js', filename)
+# Llama a la función para crear las tablas al iniciar la aplicación.
+create_tables()
 
-@app.route('/images/<path:filename>')
-def serve_images(filename):
-    """Sirve archivos de imágenes desde la carpeta 'images'."""
-    return send_from_directory('images', filename)
-
-@app.route('/sounds/<path:filename>')
-def serve_sounds(filename):
-    """Sirve archivos de sonido desde la carpeta 'sounds'."""
-    return send_from_directory('sounds', filename)
-    
-# Ruta para archivos estáticos específicos que se encuentran en la raíz (ej. co-style-style.css)
-@app.route('/<path:filename>')
-def serve_root_files(filename):
-    """Sirve archivos estáticos que se encuentran directamente en la raíz del proyecto."""
-    safe_files = ['co-style-style.css', 'favicon.ico', 'glauncher.ico', 'sitemap.xml', 'robots.txt']
-    if filename in safe_files:
-        return send_from_directory('.', filename)
-    return '', 404 
-    
 # -------------------------------------------------------------
 # *** NOTA: El bloque de ejecución local ha sido ELIMINADO para compatibilidad con Vercel. ***
 # -------------------------------------------------------------
