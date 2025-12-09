@@ -6,6 +6,10 @@ from datetime import datetime
 import os 
 import secrets 
 import pusher # Librería para la solución del chat
+from functools import wraps
+import google.generativeai as genai
+import json
+from PIL import Image
 
 # --- INICIALIZACIÓN DE LA APLICACIÓN ---
 
@@ -44,7 +48,11 @@ class User(db.Model):
     security_code = db.Column(db.String(6), nullable=True)   
     provider = db.Column(db.String(50), nullable=True)       
     social_id = db.Column(db.String(200), nullable=True, unique=True)
-    avatar_url = db.Column(db.String(512), nullable=True)    
+    avatar_url = db.Column(db.String(512), nullable=True)
+    registration_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    role = db.Column(db.String(50), nullable=False, default='Pico de madera')
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    gcoins = db.Column(db.Integer, default=0, nullable=False)
 
 class ChatMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -52,6 +60,28 @@ class ChatMessage(db.Model):
     content = db.Column(db.String(500), nullable=False)
     message_type = db.Column(db.String(10), nullable=False, default='text') 
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {'id': self.id, 'username': self.username, 'content': self.content, 'type': self.message_type, 'timestamp': self.timestamp.isoformat()}
+
+class News(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    date = db.Column(db.String(20), nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    summary = db.Column(db.Text, nullable=False)
+    image = db.Column(db.String(255), nullable=True)
+    link = db.Column(db.String(255), nullable=False)
+    icon = db.Column(db.String(50), nullable=True)
+    buttonText = db.Column(db.String(50), nullable=False)
+
+class Download(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    platform = db.Column(db.String(50), nullable=False)
+    version = db.Column(db.String(50), nullable=False)
+    icon_class = db.Column(db.String(50), nullable=False)
+    file_path = db.Column(db.String(255), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
 
     def to_dict(self):
         return {'id': self.id, 'username': self.username, 'content': self.content, 'type': self.message_type, 'timestamp': self.timestamp.isoformat()}
@@ -142,12 +172,22 @@ def download():
 def radio():
     return render_template('radio.html')
 
+@app.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy-policy.html')
+
+@app.route('/terms-and-conditions')
+def terms_and_conditions():
+    return render_template('terms-and-conditions.html')
+
+@app.route('/shop')
+def shop():
+    return render_template('shop.html')
+
 @app.route('/dashboard')
 def dashboard():
-    if 'logged_in' in session and session['logged_in']:
-        return render_template('dashboard.html')
-    else:
-        return redirect(url_for('login'))
+    # Se elimina la comprobación de inicio de sesión para permitir el acceso público al dashboard.
+    return render_template('dashboard.html')
 
 @app.route('/logout')
 def logout():
@@ -159,52 +199,140 @@ def logout():
 # --- API para Noticias ---
 @app.route('/api/news')
 def get_news():
-    news_data = [
-        {
-            "title": "¡La actualización 1.21 \"Tricky Trials\" ya está aquí!",
-            "date": "13 JUN 2024",
-            "category": "juego",
-            "summary": "¡La aventura te espera! Adéntrate en las Cámaras de Desafío, enfréntate a nuevos enemigos como el Breeze y el Bogged, y fabrica la poderosa Maza. Esta actualización está llena de retos y recompensas.",
-            "image": "/images/TRICKY_TRIALS.jpg", 
-            "link": "https://es.minecraft.wiki/w/Tricky_Trials",
-            "icon": "fa-dungeon",
-            "buttonText": "Leer más"
-        },
-        {
-            "title": "Explora el mundo de \"Trails & Tales\" (1.20)",
-            "date": "07 JUN 2023",
-            "category": "juego",
-            "summary": "La actualización 1.20 trajo la arqueología, los sniffers, camellos, y los hermosos biomas de cerezos. ¡Es hora de crear tus propias historias mientras exploras un mundo más vivo que nunca!",
-            "image": "/images/Trails and Tales.jpg", 
-            "link": "https://minecraft.wiki/w/Trails_%26_Tales",
-            "icon": "fa-map-signs",
-            "buttonText": "Leer más"
-        },
-        {
-            "title": "¡GLauncher se asocia con TropiRumba!",
-            "date": "20 OCT 2025",
-            "category": "oficial",
-            "summary": "¡Ahora puedes escuchar la mejor música mientras juegas! Nos hemos asociado con la radio TropiRumba Stereo 89.7 FM. Accede directamente desde el botón \"Radio\" en el launcher.",
-            "image": "/images/GLauncher_X_TropiRumba.png", 
-            "link": "radio.html",
-            "icon": "fa-broadcast-tower",
-            "buttonText": "Escuchar Ahora"
-        },
-    ]
-    return jsonify(news_data)
+    try:
+        news_items = News.query.order_by(News.id.desc()).all()
+        news_data = [{
+            "id": item.id,
+            "title": item.title,
+            "date": item.date,
+            "category": item.category,
+            "summary": item.summary,
+            "image": item.image,
+            "link": item.link,
+            "icon": item.icon,
+            "buttonText": item.buttonText
+        } for item in news_items]
+        return jsonify(news_data)
+    except Exception as e:
+        # Si la tabla no existe, devuelve datos de ejemplo
+        # En un entorno de producción, aquí se registraría el error.
+        print(f"Error al acceder a la tabla News: {e}. Devolviendo datos de ejemplo.")
+        return jsonify([
+            {
+                "id": 1,
+                "title": "¡Bienvenido al nuevo GLauncher!",
+                "date": "20 OCT 2025",
+                "category": "oficial",
+                "summary": "Esta es una noticia de ejemplo. El panel de administración ahora está conectado a la base de datos. ¡Crea tu primera noticia!",
+                "image": "/images/GLauncher_X_TropiRumba.png",
+                "link": "#",
+                "icon": "fa-rocket",
+                "buttonText": "Empezar"
+            }
+        ])
+
+@app.route('/api/downloads')
+def get_downloads():
+    downloads = Download.query.all()
+    return jsonify([{'id': d.id, 'platform': d.platform, 'version': d.version, 'icon_class': d.icon_class} for d in downloads])
+
+# --- Lógica de Roles de Usuario ---
+def update_user_role(user):
+    """Calcula y actualiza el rol de un usuario basado en la antigüedad de su cuenta."""
+    if user.is_admin:
+        new_role = "Pico de Netherite"
+    else:
+        months_since_registration = (datetime.utcnow() - user.registration_date).days / 30.44
+        if months_since_registration >= 8:
+            new_role = "Pico de Diamante"
+        elif months_since_registration >= 5:
+            new_role = "Pico de Oro"
+        elif months_since_registration >= 3:
+            new_role = "Pico de Hierro"
+        elif months_since_registration >= 2:
+            new_role = "Pico de Piedra"
+        else:
+            new_role = "Pico de madera"
+
+    if user.role != new_role:
+        user.role = new_role
+        db.session.commit()
 
 # --- APIs de Usuario y Chat ---
 @app.route('/api/user_info')
 def user_info():
     if 'logged_in' in session and session.get('logged_in'):
-        user = User.query.filter_by(username=session.get('username')).first()
-        if user:
-            return jsonify({
-                'username': user.username, 
-                'is_admin': False, 
-                'avatar_url': user.avatar_url
-            })
+        try:
+            user = User.query.filter_by(username=session.get('username')).first()
+            if user:
+                # Actualiza el rol del usuario antes de enviar la información
+                update_user_role(user)
+                return jsonify({
+                    'username': user.username,
+                    'is_admin': user.is_admin,
+                    'avatar_url': user.avatar_url,
+                    'role': user.role,  # Devuelve el rol actualizado
+                    'gcoins': user.gcoins # Devuelve el saldo de GCoins
+                })
+        finally:
+            # Asegura que la sesión se cierre
+            db.session.remove()
     return jsonify({'error': 'No autenticado'}), 401
+
+# --- RUTAS Y LÓGICA DEL PANEL DE ADMINISTRADOR ---
+
+def admin_required(f):
+    """Decorador para proteger rutas de administrador."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'logged_in' not in session or not session.get('logged_in'):
+            return redirect(url_for('login'))
+        
+        user = User.query.filter_by(username=session.get('username')).first()
+        if not user or not user.is_admin:
+            return "Acceso denegado. No tienes permisos de administrador.", 403
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/admin')
+@admin_required
+def admin_panel():
+    all_users = User.query.order_by(User.id.asc()).all()
+    return render_template('admin.html', users=all_users)
+
+@app.route('/api/admin/update_user', methods=['POST'])
+@admin_required
+def admin_update_user():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    user_to_update = User.query.get(user_id)
+    if not user_to_update:
+        return jsonify({'message': 'Usuario no encontrado'}), 404
+    
+    user_to_update.role = data.get('role', user_to_update.role)
+    user_to_update.is_admin = data.get('is_admin', user_to_update.is_admin)
+    db.session.commit()
+    return jsonify({'message': 'Usuario actualizado correctamente'}), 200
+
+@app.route('/api/admin/users')
+@admin_required
+def admin_get_users():
+    """Devuelve una lista de todos los usuarios para el panel de admin."""
+    try:
+        users = User.query.order_by(User.id.asc()).all()
+        users_data = [{
+            'id': user.id,
+            'username': user.username,
+            'role': user.role,
+            'is_admin': user.is_admin,
+            'registration_date': user.registration_date.isoformat(),
+            'avatar_url': user.avatar_url
+        } for user in users]
+        return jsonify(users_data)
+    finally:
+        db.session.remove()
+
 
 @app.route('/api/chat_messages')
 def get_chat_messages():
@@ -219,14 +347,15 @@ def get_chat_messages():
         except ValueError:
             return jsonify({"error": "Formato de fecha inválido"}), 400
     else:
-        # Si no hay 'since', obtiene los últimos 50 mensajes
-        query = query.order_by(ChatMessage.timestamp.desc()).limit(50)
+        # Si no hay 'since', obtiene los últimos 50 mensajes en orden descendente
+        messages_desc = query.order_by(ChatMessage.timestamp.desc()).limit(50).all()
+        # Luego los invierte para que el orden final sea ascendente (el más antiguo primero)
+        messages = list(reversed(messages_desc))
     
-    # Asegura el orden ascendente para mostrar el chat correctamente
-    messages = query.order_by(ChatMessage.timestamp.asc()).all()
     return jsonify([msg.to_dict() for msg in messages])
 
 @app.route('/api/chat_messages/create', methods=['POST'])
+@admin_required # Protegido para que solo el admin pueda enviar mensajes de sistema
 def create_chat_message():
     data = request.get_json()
     if not data or not data.get('content'):
@@ -248,6 +377,96 @@ def create_chat_message():
         
     return jsonify(new_message.to_dict()), 201
 
+@app.route('/api/gemini-chat', methods=['POST'])
+@admin_required
+def gemini_chat():
+    API_KEY = os.environ.get('GEMINI_API_KEY')
+    if not API_KEY:
+        return jsonify({'answer': "Error: La clave de API de Gemini no está configurada en el servidor."}), 500
+    try:
+        genai.configure(api_key=API_KEY)
+    except Exception as e:
+        return jsonify({'answer': f"Error de configuración de la API: {e}"}), 500
+
+    try:
+        # Extraer datos del formulario
+        history_str = request.form.get('history', '[]')
+        section = request.form.get('section', 'general')
+        uploaded_file = request.files.get('file')
+
+        # El historial viene como un string JSON, hay que convertirlo
+        chat_history = json.loads(history_str)
+        
+        # El último mensaje es el prompt actual del usuario
+        last_user_prompt = chat_history[-1]['parts'][0]['text']
+
+        # Preparar el contenido para la API
+        prompt_parts = [f"Contexto: Estás en la sección '{section}' del panel de administración. Responde a la siguiente pregunta: {last_user_prompt}"]
+
+        if uploaded_file:
+            # Si es una imagen, la procesamos
+            if uploaded_file.content_type.startswith('image/'):
+                img = Image.open(uploaded_file.stream)
+                prompt_parts.append(img)
+                # Usar el modelo vision
+                model = genai.GenerativeModel('gemini-pro-vision')
+            else:
+                # Si es otro tipo de archivo, leemos su contenido como texto
+                file_content = uploaded_file.read().decode('utf-8', errors='ignore')
+                prompt_parts.append(f"\n\nContenido del archivo adjunto '{uploaded_file.filename}':\n---\n{file_content}")
+                model = genai.GenerativeModel('gemini-pro')
+        else:
+            model = genai.GenerativeModel('gemini-pro')
+
+        response = model.generate_content(prompt_parts)
+        return jsonify({'answer': response.text})
+
+    except Exception as e:
+        return jsonify({'answer': f"Ocurrió un error al procesar la solicitud: {e}"}), 500
+
+@app.route('/api/admin/status')
+@admin_required
+def get_system_status():
+    """Comprueba y devuelve el estado de los servicios clave."""
+    status = {
+        'backend': {'status': 'online', 'message': 'API operativa.'},
+        'gemini': {'status': 'loading', 'message': 'Comprobando...'},
+        'pusher': {'status': 'loading', 'message': 'Comprobando...'}
+    }
+
+    # Comprobar Gemini
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        status['gemini'] = {'status': 'offline', 'message': 'Clave API no configurada.'}
+    else:
+        try:
+            genai.configure(api_key=api_key)
+            # Hacemos una petición simple para verificar la clave
+            model = genai.GenerativeModel('gemini-pro')
+            model.generate_content("Test", generation_config=genai.types.GenerationConfig(max_output_tokens=5))
+            status['gemini'] = {'status': 'online', 'message': 'Servicio operativo.'}
+        except Exception as e:
+            status['gemini'] = {'status': 'offline', 'message': 'Clave API inválida o error de servicio.'}
+
+    # Comprobar Pusher
+    if all([os.environ.get('PUSHER_APP_ID'), os.environ.get('PUSHER_KEY'), os.environ.get('PUSHER_SECRET')]):
+        try:
+            pusher_client.trigger('presence-test', 'test_event', {'message': 'ping'})
+            status['pusher'] = {'status': 'online', 'message': 'Servicio operativo.'}
+        except Exception as e:
+            status['pusher'] = {'status': 'offline', 'message': f'Error de conexión: {e}'}
+    else:
+        status['pusher'] = {'status': 'offline', 'message': 'Claves no configuradas.'}
+
+    return jsonify(status)
+
+@app.route('/api/admin/settings/gemini-key', methods=['POST'])
+@admin_required
+def set_gemini_api_key():
+    # ¡¡¡ADVERTENCIA!!! Esto NO guarda la clave de forma persistente en Vercel.
+    # Las variables de entorno en Vercel deben cambiarse en su dashboard.
+    # Esta ruta sirve como demostración o para entornos donde se puedan modificar.
+    return jsonify({'message': 'Funcionalidad no soportada en este entorno. Cambia la clave en el dashboard de Vercel.'}), 400
 # --- Rutas para OAuth (Google y Microsoft) ---
 @app.route('/login/google')
 def login_google():
