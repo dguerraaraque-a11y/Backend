@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GLauncher - Suite de Pruebas del Backend</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --main-bg-color: #0d1117; --secondary-bg-color: #161b22; --text-color-light: #f0f8ff;
+            --text-color-dark: #8b949e; --neon-blue: #00ffff; --neon-pink: #ff00ff; --neon-green: #39ff14;
+            --border-radius-base: 8px;
+        }
+        body {
+            font-family: 'Consolas', 'Courier New', monospace; background-color: var(--main-bg-color);
+            color: var(--text-color-light); margin: 0; padding: 20px;
+        }
+        h1, h2 { color: var(--neon-blue); border-bottom: 1px solid var(--neon-blue); padding-bottom: 5px; }
+        .container { max-width: 1200px; margin: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .test-card { background-color: var(--secondary-bg-color); border: 1px solid var(--neon-pink); border-radius: var(--border-radius-base); padding: 20px; }
+        .test-card h2 { margin-top: 0; font-size: 1.5em; }
+        textarea, input, button {
+            width: 100%; padding: 10px; margin-top: 10px; background-color: #0d1117; border: 1px solid var(--neon-blue);
+            color: var(--text-color-light); border-radius: 5px; box-sizing: border-box;
+        }
+        button { cursor: pointer; background-color: var(--neon-blue); color: #0d1117; font-weight: bold; }
+        button:hover { background-color: var(--neon-pink); }
+        .response-area { margin-top: 15px; background-color: #0d1117; padding: 10px; min-height: 50px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+
+    <h1><i class="fas fa-vial"></i> GLauncher Backend - Suite de Pruebas</h1>
+    <p>Esta página se sirve directamente desde el backend para probar las APIs.</p>
+
+    <div class="container">
+
+        <!-- 1. Prueba de API de Gemini -->
+        <div class="test-card">
+            <h2><i class="fas fa-magic"></i> Prueba de Gemini</h2>
+            <textarea id="gemini-prompt" placeholder="Escribe un prompt para Gemini..."></textarea>
+            <button onclick="testGemini()">Enviar a Gemini</button>
+            <div class="response-area" id="gemini-response"></div>
+        </div>
+
+        <!-- 2. Prueba de Chat de Noticias -->
+        <div class="test-card">
+            <h2><i class="fas fa-newspaper"></i> Chat de Noticias (Simulado)</h2>
+            <input type="text" id="news-chat-user" placeholder="Tu nombre...">
+            <textarea id="news-chat-message" placeholder="Escribe un mensaje..."></textarea>
+            <button onclick="sendNewsChatMessage()">Enviar Mensaje</button>
+            <div class="response-area" id="news-chat-log"></div>
+        </div>
+
+        <!-- 3. Prueba de GMusic / API de YouTube -->
+        <div class="test-card">
+            <h2><i class="fab fa-youtube"></i> Prueba de GMusic (API YouTube)</h2>
+            <input type="text" id="yt-search-query" placeholder="Buscar canción en YouTube...">
+            <button onclick="testYouTubeSearch()">Buscar</button>
+            <div class="response-area" id="yt-search-results"></div>
+        </div>
+
+        <!-- 4. Prueba de API de Noticias -->
+        <div class="test-card">
+            <h2><i class="fas fa-server"></i> API de Noticias</h2>
+            <p>Prueba la API que alimenta la sección de noticias.</p>
+            <button onclick="fetchNews()">Cargar Noticias</button>
+            <div class="response-area" id="news-api-response"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+
+        // Función para la prueba de Gemini (requiere que el endpoint esté protegido por admin)
+        async function testGemini() {
+            const prompt = document.getElementById('gemini-prompt').value;
+            const responseArea = document.getElementById('gemini-response');
+            responseArea.textContent = 'Enviando... (Nota: Esta API requiere sesión de admin)';
+            // Esta es una simulación. La llamada real necesitaría autenticación.
+            responseArea.textContent = `Simulación de llamada con prompt: "${prompt}".\nEl endpoint /api/gemini-chat está listo para ser probado con una sesión de administrador válida.`;
+        }
+
+        // Función para el chat de noticias (simulado, ya que no existe el endpoint)
+        function sendNewsChatMessage() {
+            const user = document.getElementById('news-chat-user').value;
+            const message = document.getElementById('news-chat-message').value;
+            const log = document.getElementById('news-chat-log');
+            log.innerHTML += `<div><strong>${user || 'Anónimo'}:</strong> ${message}</div>`;
+            document.getElementById('news-chat-message').value = '';
+        }
+
+        // Función para la búsqueda en YouTube (simulado)
+        function testYouTubeSearch() {
+            const query = document.getElementById('yt-search-query').value;
+            const resultsArea = document.getElementById('yt-search-results');
+            resultsArea.textContent = `Simulación de búsqueda para: "${query}".\nSe necesitaría un nuevo endpoint en app.py que use la API de YouTube para obtener resultados reales.`;
+        }
+
+        // Función para obtener noticias
+        async function fetchNews() {
+            const responseArea = document.getElementById('news-api-response');
+            responseArea.textContent = 'Cargando...';
+            try {
+                const response = await fetch(`${API_URL}/api/news`);
+                if (!response.ok) throw new Error(`Error ${response.status}`);
+                const data = await response.json();
+                responseArea.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                responseArea.textContent = `Error al cargar noticias: ${error.message}`;
+            }
+        }
+    </script>
+
+</body>
+</html>
+
+<!--
+[PROMPT_SUGGESTION]¿Cómo puedo proteger el archivo `test_suite.html` para que solo yo pueda verlo?[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]Explícame cómo implementar la búsqueda de YouTube en el backend.[/PROMPT_SUGGESTION]

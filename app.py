@@ -13,12 +13,6 @@ from PIL import Image
 
 # --- INICIALIZACIÓN DE LA APLICACIÓN ---
 
-# Leer la DATABASE_URL de las variables de entorno de Vercel. 
-# Si no está en Vercel, intenta usar SQLite (que fallará, pero es el fallback local).
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///glauncher.db')
-
-# URL del frontend para redirecciones seguras (ahora fija a la URL de producción)
-FRONTEND_DASHBOARD_URL = 'https://glauncher.vercel.app/dashboard.html'
 
 # Configuración de Pusher (Claves leídas de Vercel)
 pusher_client = pusher.Pusher(
@@ -29,19 +23,32 @@ pusher_client = pusher.Pusher(
     ssl=True
 )
 
-# --- CONFIGURACIÓN DE RUTAS ABSOLUTAS PARA FLASK ---
-# Esto soluciona el error 'TemplateNotFound' en Render.
-# 1. Obtenemos la ruta absoluta del directorio donde está este script (la carpeta BACKEND).
+# --- CONFIGURACIÓN DE RUTAS Y CARPETAS ---
 current_dir = os.path.abspath(os.path.dirname(__file__))
-# 2. Construimos la ruta a la carpeta raíz del proyecto (GLAUNCHER-WEB), que está un nivel "arriba" de BACKEND.
+# La carpeta 'static' (con test_suite.html) ahora está DENTRO de la carpeta 'BACKEND'.
+static_dir = os.path.join(current_dir, 'static')
+# La carpeta raíz del frontend (para los HTML principales) sigue estando un nivel arriba.
 root_dir = os.path.join(current_dir, '..')
 
-# 3. Inicializamos Flask, diciéndole explícitamente dónde encontrar los archivos.
+# URL del frontend para redirecciones seguras
+FRONTEND_DASHBOARD_URL = 'https://glauncher.vercel.app/dashboard.html'
+
+# Configuración de la base de datos.
+# En producción (Render), usa la variable de entorno DATABASE_URL.
+# En local, crea un archivo 'glauncher.db' en la nueva carpeta 'static/data'.
+data_dir = os.path.join(static_dir, 'data')
+os.makedirs(data_dir, exist_ok=True) # Asegura que la carpeta 'data' exista.
+local_db_path = os.path.join(data_dir, 'glauncher.db')
+DATABASE_URL = os.environ.get('DATABASE_URL', f'sqlite:///{local_db_path}')
+
+# Inicializamos Flask.
+# - `template_folder`: Apunta a la raíz para encontrar los HTML principales (index.html, etc.).
+# - `static_folder`: Apunta a la nueva carpeta 'static' para servir los archivos de prueba.
 app = Flask(__name__,
-            template_folder=root_dir,  # Busca archivos HTML como 'index.html' en la carpeta raíz.
-            static_folder=root_dir,    # Sirve archivos desde la raíz.
-            static_url_path=''         # Permite que las URLs como /css/styles.css funcionen directamente.
+            template_folder=root_dir,
+            static_folder=static_dir
            )
+
 oauth = OAuth(app)
 
 # Claves y DB
@@ -123,7 +130,10 @@ oauth.register(
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # Ahora la ruta raíz del backend sirve la página de pruebas.
+    # Los usuarios normales accederán a través de glauncher.vercel.app, no de la URL de la API.
+    return send_from_directory(static_dir, 'test_suite.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
