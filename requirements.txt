@@ -5,3 +5,5 @@ bcrypt
 pusher
 gunicorn
 psycopg2-binary
+google-generativeai
+Pillow

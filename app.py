@@ -17,8 +17,8 @@ from PIL import Image
 # Si no está en Vercel, intenta usar SQLite (que fallará, pero es el fallback local).
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///glauncher.db')
 
-# URL del frontend para redirecciones seguras
-FRONTEND_DASHBOARD_URL = os.environ.get('FRONTEND_URL', 'http://127.0.0.1:5500') + '/dashboard.html'
+# URL del frontend para redirecciones seguras (ahora fija a la URL de producción)
+FRONTEND_DASHBOARD_URL = 'https://glauncher.vercel.app/dashboard.html'
 
 # Configuración de Pusher (Claves leídas de Vercel)
 pusher_client = pusher.Pusher(
