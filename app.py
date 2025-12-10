@@ -654,3 +654,29 @@ def auth_microsoft():
 # -------------------------------------------------------------
 # *** NOTA: El bloque de ejecución local ha sido ELIMINADO para compatibilidad con Vercel. ***
 # -------------------------------------------------------------
+
+# --- FUNCIÓN PARA CREAR TABLAS ---
+def create_tables():
+    """Crea todas las tablas de la base de datos si no existen."""
+    with app.app_context():
+        db.create_all()
+
+# Llama a la función para crear las tablas al iniciar la aplicación.
+create_tables()
+
+@app.route('/create_first_admin')
+def create_first_admin():
+    """Ruta temporal para crear el primer usuario administrador. Se debe eliminar después del primer uso."""
+    # Comprueba si ya existe un administrador para evitar crear más de uno.
+    if User.query.filter_by(is_admin=True).first():
+        return "Un administrador ya existe. Esta función está desactivada.", 403
+
+    # Define las credenciales del administrador aquí
+    admin_username = "admin"
+    admin_password = "password123" # ¡Cambia esto por una contraseña segura!
+
+    hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    admin_user = User(username=admin_username, password_hash=hashed_password, is_admin=True, role="Pico de Netherite")
+    db.session.add(admin_user)
+    db.session.commit()
+    return f"¡Usuario administrador '{admin_username}' creado con éxito! Ya puedes borrar esta ruta de app.py."
