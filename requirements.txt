@@ -9,3 +9,4 @@ google-generativeai
 Pillow
 google-api-python-client
 google-auth-oauthlib
+Flask-Cors

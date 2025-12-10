@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
 import bcrypt
 from datetime import datetime
@@ -47,9 +48,13 @@ DATABASE_URL = os.environ.get('DATABASE_URL', f'sqlite:///{local_db_path}')
 # - `template_folder`: Apunta a la raíz para encontrar los HTML principales (index.html, etc.).
 # - `static_folder`: Apunta a la nueva carpeta 'static' para servir los archivos de prueba.
 app = Flask(__name__,
-            template_folder=root_dir,
-            static_folder=static_dir
+            template_folder=frontend_dir,
+            static_folder=frontend_dir,
+            static_url_path='' # Permite que /css/styles.css funcione directamente
            )
+# Habilitar CORS para permitir peticiones desde cualquier origen.
+# Es útil para desarrollo y para cuando el frontend y backend están en dominios diferentes.
+CORS(app, supports_credentials=True)
 
 oauth = OAuth(app)
 
@@ -646,39 +651,6 @@ def auth_microsoft():
         # Asegura que la sesión de la DB se cierre correctamente.
         db.session.remove()
 
-# --------------------------------------------------------------------------------------
-# --- RUTAS PERSONALIZADAS PARA SERVIR ARCHIVOS ESTÁTICOS (SOLUCIÓN CSS/JS/IMAGENES) ---
-# --------------------------------------------------------------------------------------
-# Estas rutas mapean las URL como /css/style.css a la carpeta física 'css' en la raíz.
-@app.route('/css/<path:filename>')
-def serve_css(filename):
-    """Sirve archivos CSS desde la carpeta 'css'."""
-    return send_from_directory('css', filename)
-
-@app.route('/js/<path:filename>')
-def serve_js(filename):
-    """Sirve archivos JS desde la carpeta 'js'."""
-    return send_from_directory('js', filename)
-
-@app.route('/images/<path:filename>')
-def serve_images(filename):
-    """Sirve archivos de imágenes desde la carpeta 'images'."""
-    return send_from_directory('images', filename)
-
-@app.route('/sounds/<path:filename>')
-def serve_sounds(filename):
-    """Sirve archivos de sonido desde la carpeta 'sounds'."""
-    return send_from_directory('sounds', filename)
-    
-# Ruta para archivos estáticos específicos que se encuentran en la raíz (ej. co-style-style.css)
-@app.route('/<path:filename>')
-def serve_root_files(filename):
-    """Sirve archivos estáticos que se encuentran directamente en la raíz del proyecto."""
-    safe_files = ['co-style-style.css', 'favicon.ico', 'glauncher.ico', 'sitemap.xml', 'robots.txt']
-    if filename in safe_files:
-        return send_from_directory('.', filename)
-    return '', 404 
-    
 # -------------------------------------------------------------
 # *** NOTA: El bloque de ejecución local ha sido ELIMINADO para compatibilidad con Vercel. ***
 # -------------------------------------------------------------
