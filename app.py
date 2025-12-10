@@ -572,6 +572,32 @@ def login_google():
 
 @app.route('/login/google/callback')
 def auth_google():
+    token = oauth.google.authorize_access_token()
+    # ¡CORRECCIÓN CRÍTICA! Pasar el token explícitamente a userinfo()
+    # para asegurar la robustez en entornos de producción como Render.
+    user_info = oauth.google.userinfo(token=token)
+    social_id = user_info.get('sub')
+    avatar_url = user_info.get('picture')
+
+    if not social_id:
+        return 'Error: No se pudo obtener el ID de usuario de Google.', 400
+
+    try:
+        user = User.query.filter_by(provider='google', social_id=social_id).first()
+        if not user:
+            username = user_info.get('name', user_info.get('given_name', f"user_{social_id[:8]}"))
+            if User.query.filter_by(username=username).first():
+                username = f"{username}_{social_id[:4]}"
+            new_user = User(username=username, provider='google', social_id=social_id, avatar_url=avatar_url)
+            db.session.add(new_user)
+            db.session.commit()
+            user = new_user
+
+        session['logged_in'] = True
+        session['username'] = user.username
+        return redirect(FRONTEND_DASHBOARD_URL)
+    finally:
+        db.session.remove()
 
 @app.route('/login/microsoft')
 def login_microsoft():
