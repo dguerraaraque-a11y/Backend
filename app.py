@@ -242,24 +242,19 @@ def logout():
 def get_news():
     try:
         news_items = News.query.order_by(News.id.desc()).all()
-        news_data = [{
-            "id": item.id,
-            "title": item.title,
-            "date": item.date,
-            "category": item.category,
-            "summary": item.summary,
-            "image": item.image,
-            "link": item.link,
-            "icon": item.icon,
-            "buttonText": item.buttonText
-        } for item in news_items]
-        return jsonify(news_data)
+        if news_items:
+            news_data = [{
+                "id": item.id, "title": item.title, "date": item.date,
+                "category": item.category, "summary": item.summary, "image": item.image,
+                "link": item.link, "icon": item.icon, "buttonText": item.buttonText
+            } for item in news_items]
+            return jsonify(news_data)
     except Exception as e:
-        # Si la tabla no existe, devuelve datos de ejemplo
-        # En un entorno de producción, aquí se registraría el error.
         print(f"Error al acceder a la tabla News: {e}. Devolviendo datos de ejemplo.")
-        return jsonify([
-            {
+
+    # Si la tabla no existe, está vacía, o hay un error, devuelve datos de ejemplo.
+    return jsonify([
+        {
                 "id": 1,
                 "title": "¡Bienvenido al nuevo GLauncher!",
                 "date": "20 OCT 2025",
@@ -269,8 +264,8 @@ def get_news():
                 "link": "#",
                 "icon": "fa-rocket",
                 "buttonText": "Empezar"
-            }
-        ])
+        }
+    ])
 
 @app.route('/api/downloads')
 def get_downloads():
@@ -427,7 +422,7 @@ def create_chat_message():
     
     # LÓGICA DE PUSHER (Notifica a los clientes)
     try:
-        pusher_client.trigger('chat_radio', 'new_message', new_message.to_dict())
+        pusher_client.trigger('presence-chat_radio', 'new_message', new_message.to_dict())
     except Exception as e:
         print(f"Error al enviar mensaje por Pusher: {e}") 
         
@@ -650,6 +645,26 @@ def auth_microsoft():
     finally:
         # Asegura que la sesión de la DB se cierre correctamente.
         db.session.remove()
+
+# --- ENDPOINT DE AUTENTICACIÓN PARA PUSHER (PRESENCE CHANNELS) ---
+@app.route("/pusher/auth", methods=['POST'])
+def pusher_authentication():
+    """Autentica a los usuarios para los canales de presencia de Pusher."""
+    # Intenta obtener el nombre de usuario de la sesión
+    username = session.get('username', f"Invitado_{secrets.token_hex(4)}")
+
+    # Crea los datos del usuario para Pusher
+    user_data = {'user_id': username, 'user_info': {'username': username}}
+
+    try:
+        auth = pusher_client.authenticate(
+            channel=request.form['channel_name'],
+            socket_id=request.form['socket_id'],
+            custom_data=user_data
+        )
+        return jsonify(auth)
+    except pusher.errors.PusherError as e:
+        return f"Error de autenticación de Pusher: {e}", 403
 
 # -------------------------------------------------------------
 # *** NOTA: El bloque de ejecución local ha sido ELIMINADO para compatibilidad con Vercel. ***
