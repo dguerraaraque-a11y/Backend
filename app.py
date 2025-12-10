@@ -10,15 +10,11 @@ from functools import wraps
 import google.generativeai as genai
 import json
 from PIL import Image
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 # --- INICIALIZACIÓN DE LA APLICACIÓN ---
 
-# Leer la DATABASE_URL de las variables de entorno de Vercel. 
-# Si no está en Vercel, intenta usar SQLite (que fallará, pero es el fallback local).
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///glauncher.db')
-
-# URL del frontend para redirecciones seguras (ahora fija a la URL de producción)
-FRONTEND_DASHBOARD_URL = 'https://glauncher.vercel.app/dashboard.html'
 
 # Configuración de Pusher (Claves leídas de Vercel)
 pusher_client = pusher.Pusher(
@@ -29,8 +25,32 @@ pusher_client = pusher.Pusher(
     ssl=True
 )
 
-# Inicialización de Flask: configuración simple para Serverless
-app = Flask(__name__) 
+# --- CONFIGURACIÓN DE RUTAS Y CARPETAS ---
+current_dir = os.path.abspath(os.path.dirname(__file__))
+# La carpeta 'static' (con test_suite.html) ahora está DENTRO de la carpeta 'BACKEND'.
+static_dir = os.path.join(current_dir, 'static')
+# La carpeta raíz del frontend (para los HTML principales) sigue estando un nivel arriba.
+root_dir = os.path.join(current_dir, '..')
+
+# URL del frontend para redirecciones seguras
+FRONTEND_DASHBOARD_URL = 'https://glauncher.vercel.app/dashboard.html'
+
+# Configuración de la base de datos.
+# En producción (Render), usa la variable de entorno DATABASE_URL.
+# En local, crea un archivo 'glauncher.db' en la nueva carpeta 'static/data'.
+data_dir = os.path.join(static_dir, 'data')
+os.makedirs(data_dir, exist_ok=True) # Asegura que la carpeta 'data' exista.
+local_db_path = os.path.join(data_dir, 'glauncher.db')
+DATABASE_URL = os.environ.get('DATABASE_URL', f'sqlite:///{local_db_path}')
+
+# Inicializamos Flask.
+# - `template_folder`: Apunta a la raíz para encontrar los HTML principales (index.html, etc.).
+# - `static_folder`: Apunta a la nueva carpeta 'static' para servir los archivos de prueba.
+app = Flask(__name__,
+            template_folder=root_dir,
+            static_folder=static_dir
+           )
+
 oauth = OAuth(app)
 
 # Claves y DB
@@ -54,8 +74,15 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     gcoins = db.Column(db.Integer, default=0, nullable=False)
 
+    # Control de frecuencia de mensajes para evitar spam
+    last_message_time = db.Column(db.DateTime, nullable=True)
+
 class ChatMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    # Relación con el usuario que envió el mensaje (opcional)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    user = db.relationship('User', backref='chat_messages')
+
     username = db.Column(db.String(80), nullable=False)
     content = db.Column(db.String(500), nullable=False)
     message_type = db.Column(db.String(10), nullable=False, default='text') 
@@ -84,7 +111,13 @@ class Download(db.Model):
     filename = db.Column(db.String(255), nullable=False)
 
     def to_dict(self):
-        return {'id': self.id, 'username': self.username, 'content': self.content, 'type': self.message_type, 'timestamp': self.timestamp.isoformat()}
+        return {
+            'id': self.id,
+            'platform': self.platform,
+            'version': self.version,
+            'icon_class': self.icon_class,
+            'filename': self.filename
+        }
 
 # --- CONFIGURACIÓN DE OAUTH 2.0 (Usando Variables de Entorno) ---
 # Se asume que GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CLIENT_ID, y MICROSOFT_CLIENT_SECRET 
@@ -112,7 +145,10 @@ oauth.register(
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # Ahora la ruta raíz del backend sirve la página de pruebas.
+    # Los usuarios normales accederán a través de glauncher.vercel.app, no de la URL de la API.
+    return send_from_directory(static_dir, 'test_suite.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -355,14 +391,29 @@ def get_chat_messages():
     return jsonify([msg.to_dict() for msg in messages])
 
 @app.route('/api/chat_messages/create', methods=['POST'])
-@admin_required # Protegido para que solo el admin pueda enviar mensajes de sistema
 def create_chat_message():
     data = request.get_json()
     if not data or not data.get('content'):
         return jsonify({'error': 'El contenido no puede estar vacío'}), 400
-    
+
+    # Lógica anti-spam: Limitar la frecuencia de mensajes
+    user = None
+    if 'username' in session:
+        user = User.query.filter_by(username=session['username']).first()
+        if user:
+            now = datetime.utcnow()
+            if user.last_message_time and (now - user.last_message_time).total_seconds() < 3: # Límite de 3 segundos
+                return jsonify({'error': 'Estás enviando mensajes demasiado rápido.'}), 429
+            user.last_message_time = now
+
+    username = data.get('username', 'Anónimo')
+    # Si el usuario está logueado, usamos su nombre de sesión para mayor seguridad
+    if user:
+        username = user.username
+
     new_message = ChatMessage(
-        username=data.get('username', 'Anónimo'),
+        user_id=user.id if user else None,
+        username=username,
         content=data.get('content'),
         message_type=data.get('type', 'text')
     )
@@ -424,6 +475,34 @@ def gemini_chat():
     except Exception as e:
         return jsonify({'answer': f"Ocurrió un error al procesar la solicitud: {e}"}), 500
 
+@app.route('/api/youtube/search', methods=['GET'])
+@admin_required
+def youtube_search():
+    """Busca videos en YouTube usando la API de YouTube Data v3."""
+    query = request.args.get('q')
+    api_key = os.environ.get('YOUTUBE_API_KEY')
+
+    if not query:
+        return jsonify({'error': 'El parámetro de búsqueda "q" es requerido.'}), 400
+    if not api_key:
+        return jsonify({'error': 'La clave de API de YouTube no está configurada en el servidor.'}), 500
+
+    try:
+        youtube = build('youtube', 'v3', developerKey=api_key)
+        search_response = youtube.search().list(
+            q=query,
+            part='snippet',
+            maxResults=10,
+            type='video'
+        ).execute()
+
+        videos = [{'title': item['snippet']['title'], 'videoId': item['id']['videoId']} for item in search_response.get('items', [])]
+        return jsonify(videos)
+    except HttpError as e:
+        return jsonify({'error': f'Ocurrió un error con la API de YouTube: {e.resp.status} {e.content}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Ocurrió un error inesperado: {str(e)}'}), 500
+
 @app.route('/api/admin/status')
 @admin_required
 def get_system_status():
@@ -431,7 +510,8 @@ def get_system_status():
     status = {
         'backend': {'status': 'online', 'message': 'API operativa.'},
         'gemini': {'status': 'loading', 'message': 'Comprobando...'},
-        'pusher': {'status': 'loading', 'message': 'Comprobando...'}
+        'pusher': {'status': 'loading', 'message': 'Comprobando...'},
+        'youtube': {'status': 'loading', 'message': 'Comprobando...'}
     }
 
     # Comprobar Gemini
@@ -458,6 +538,21 @@ def get_system_status():
     else:
         status['pusher'] = {'status': 'offline', 'message': 'Claves no configuradas.'}
 
+    # Comprobar YouTube API
+    yt_api_key = os.environ.get('YOUTUBE_API_KEY')
+    if not yt_api_key:
+        status['youtube'] = {'status': 'offline', 'message': 'Clave API no configurada.'}
+    else:
+        try:
+            youtube = build('youtube', 'v3', developerKey=yt_api_key)
+            # Hacemos una petición simple para verificar la clave
+            youtube.search().list(q='test', part='id', maxResults=1).execute()
+            status['youtube'] = {'status': 'online', 'message': 'Servicio operativo.'}
+        except HttpError as e:
+            status['youtube'] = {'status': 'offline', 'message': f'Clave API inválida o error de servicio.'}
+        except Exception as e:
+            status['youtube'] = {'status': 'offline', 'message': f'Error de conexión: {str(e)}'}
+
     return jsonify(status)
 
 @app.route('/api/admin/settings/gemini-key', methods=['POST'])
@@ -470,7 +565,10 @@ def set_gemini_api_key():
 # --- Rutas para OAuth (Google y Microsoft) ---
 @app.route('/login/google')
 def login_google():
-    redirect_uri = url_for('auth_google', _external=True)
+    # ¡CORRECCIÓN! Asegurarse de que la URI de redirección sea HTTPS en producción.
+    # Render y otros proveedores usan un proxy inverso, por lo que _external=True puede no ser suficiente.
+    # Forzar el esquema a https es más robusto.
+    redirect_uri = url_for('auth_google', _external=True, _scheme='https')
     return oauth.google.authorize_redirect(redirect_uri)
 
 @app.route('/login/google/callback')
@@ -505,7 +603,8 @@ def auth_google():
 
 @app.route('/login/microsoft')
 def login_microsoft():
-    redirect_uri = url_for('auth_microsoft', _external=True)
+    # Forzar HTTPS para la URI de redirección de Microsoft también.
+    redirect_uri = url_for('auth_microsoft', _external=True, _scheme='https')
     return oauth.microsoft.authorize_redirect(redirect_uri)
 
 @app.route('/login/microsoft/callback')
@@ -549,39 +648,22 @@ def auth_microsoft():
         # Asegura que la sesión de la DB se cierre correctamente.
         db.session.remove()
 
-# --------------------------------------------------------------------------------------
-# --- RUTAS PERSONALIZADAS PARA SERVIR ARCHIVOS ESTÁTICOS (SOLUCIÓN CSS/JS/IMAGENES) ---
-# --------------------------------------------------------------------------------------
-# Estas rutas mapean las URL como /css/style.css a la carpeta física 'css' en la raíz.
-@app.route('/css/<path:filename>')
-def serve_css(filename):
-    """Sirve archivos CSS desde la carpeta 'css'."""
-    return send_from_directory('css', filename)
+# Hook para cerrar la sesión de la base de datos después de cada solicitud
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    """Cierra la sesión de la base de datos al final de la solicitud."""
+    if db.session:
+        db.session.remove()
 
-@app.route('/js/<path:filename>')
-def serve_js(filename):
-    """Sirve archivos JS desde la carpeta 'js'."""
-    return send_from_directory('js', filename)
+# --- FUNCIÓN PARA CREAR TABLAS ---
+def create_tables():
+    """Crea todas las tablas de la base de datos si no existen."""
+    with app.app_context():
+        db.create_all()
 
-@app.route('/images/<path:filename>')
-def serve_images(filename):
-    """Sirve archivos de imágenes desde la carpeta 'images'."""
-    return send_from_directory('images', filename)
+# Llama a la función para crear las tablas al iniciar la aplicación.
+create_tables()
 
-@app.route('/sounds/<path:filename>')
-def serve_sounds(filename):
-    """Sirve archivos de sonido desde la carpeta 'sounds'."""
-    return send_from_directory('sounds', filename)
-    
-# Ruta para archivos estáticos específicos que se encuentran en la raíz (ej. co-style-style.css)
-@app.route('/<path:filename>')
-def serve_root_files(filename):
-    """Sirve archivos estáticos que se encuentran directamente en la raíz del proyecto."""
-    safe_files = ['co-style-style.css', 'favicon.ico', 'glauncher.ico', 'sitemap.xml', 'robots.txt']
-    if filename in safe_files:
-        return send_from_directory('.', filename)
-    return '', 404 
-    
 # -------------------------------------------------------------
 # *** NOTA: El bloque de ejecución local ha sido ELIMINADO para compatibilidad con Vercel. ***
 # -------------------------------------------------------------
