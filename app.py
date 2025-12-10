@@ -566,40 +566,12 @@ def set_gemini_api_key():
 @app.route('/login/google')
 def login_google():
     # ¡CORRECCIÓN! Asegurarse de que la URI de redirección sea HTTPS en producción.
-    # Render y otros proveedores usan un proxy inverso, por lo que _external=True puede no ser suficiente.
     # Forzar el esquema a https es más robusto.
     redirect_uri = url_for('auth_google', _external=True, _scheme='https')
     return oauth.google.authorize_redirect(redirect_uri)
 
 @app.route('/login/google/callback')
 def auth_google():
-    token = oauth.google.authorize_access_token()
-    # ¡CORRECCIÓN CRÍTICA! Pasar el token explícitamente a userinfo()
-    # para asegurar la robustez en entornos de producción como Render.
-    user_info = oauth.google.userinfo(token=token)
-    social_id = user_info.get('sub')
-    avatar_url = user_info.get('picture')
-
-    if not social_id:
-        return 'Error: No se pudo obtener el ID de usuario de Google.', 400
-
-    try:
-        user = User.query.filter_by(provider='google', social_id=social_id).first()
-        if not user:
-            username = user_info.get('name', user_info.get('given_name', f"user_{social_id[:8]}"))
-            if User.query.filter_by(username=username).first():
-                username = f"{username}_{social_id[:4]}"
-            new_user = User(username=username, provider='google', social_id=social_id, avatar_url=avatar_url)
-            db.session.add(new_user)
-            db.session.commit()
-            user = new_user
-
-        session['logged_in'] = True
-        session['username'] = user.username
-        return redirect(FRONTEND_DASHBOARD_URL)
-    finally:
-        # Asegura que la sesión de la DB se cierre correctamente para evitar errores 500.
-        db.session.remove()
 
 @app.route('/login/microsoft')
 def login_microsoft():
@@ -648,22 +620,39 @@ def auth_microsoft():
         # Asegura que la sesión de la DB se cierre correctamente.
         db.session.remove()
 
-# Hook para cerrar la sesión de la base de datos después de cada solicitud
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    """Cierra la sesión de la base de datos al final de la solicitud."""
-    if db.session:
-        db.session.remove()
+# --------------------------------------------------------------------------------------
+# --- RUTAS PERSONALIZADAS PARA SERVIR ARCHIVOS ESTÁTICOS (SOLUCIÓN CSS/JS/IMAGENES) ---
+# --------------------------------------------------------------------------------------
+# Estas rutas mapean las URL como /css/style.css a la carpeta física 'css' en la raíz.
+@app.route('/css/<path:filename>')
+def serve_css(filename):
+    """Sirve archivos CSS desde la carpeta 'css'."""
+    return send_from_directory('css', filename)
 
-# --- FUNCIÓN PARA CREAR TABLAS ---
-def create_tables():
-    """Crea todas las tablas de la base de datos si no existen."""
-    with app.app_context():
-        db.create_all()
+@app.route('/js/<path:filename>')
+def serve_js(filename):
+    """Sirve archivos JS desde la carpeta 'js'."""
+    return send_from_directory('js', filename)
 
-# Llama a la función para crear las tablas al iniciar la aplicación.
-create_tables()
+@app.route('/images/<path:filename>')
+def serve_images(filename):
+    """Sirve archivos de imágenes desde la carpeta 'images'."""
+    return send_from_directory('images', filename)
 
+@app.route('/sounds/<path:filename>')
+def serve_sounds(filename):
+    """Sirve archivos de sonido desde la carpeta 'sounds'."""
+    return send_from_directory('sounds', filename)
+    
+# Ruta para archivos estáticos específicos que se encuentran en la raíz (ej. co-style-style.css)
+@app.route('/<path:filename>')
+def serve_root_files(filename):
+    """Sirve archivos estáticos que se encuentran directamente en la raíz del proyecto."""
+    safe_files = ['co-style-style.css', 'favicon.ico', 'glauncher.ico', 'sitemap.xml', 'robots.txt']
+    if filename in safe_files:
+        return send_from_directory('.', filename)
+    return '', 404 
+    
 # -------------------------------------------------------------
 # *** NOTA: El bloque de ejecución local ha sido ELIMINADO para compatibilidad con Vercel. ***
 # -------------------------------------------------------------
