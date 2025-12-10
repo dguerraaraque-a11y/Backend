@@ -30,8 +30,8 @@ pusher_client = pusher.Pusher(
 current_dir = os.path.abspath(os.path.dirname(__file__))
 # La carpeta 'static' (con test_suite.html) ahora está DENTRO de la carpeta 'BACKEND'.
 static_dir = os.path.join(current_dir, 'static')
-# La carpeta raíz del frontend (para los HTML principales) sigue estando un nivel arriba.
-root_dir = os.path.join(current_dir, '..')
+# La carpeta raíz del frontend (GLAUNCHER-WEB) está al mismo nivel que BACKEND.
+frontend_dir = os.path.join(current_dir, '..', 'GLAUNCHER-WEB')
 
 # URL del frontend para redirecciones seguras
 FRONTEND_DASHBOARD_URL = 'https://glauncher.vercel.app/dashboard.html'
