@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
 import bcrypt
+import jwt
 from datetime import datetime
 import os 
 import secrets 
@@ -11,9 +12,11 @@ from functools import wraps
 import google.generativeai as genai
 import json
 from PIL import Image
+from datetime import timedelta
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+ALLOWED_EXTENSIONS = {'bbmodel', 'json', 'obj'}
 # --- INICIALIZACIÓN DE LA APLICACIÓN ---
 
 
@@ -30,16 +33,19 @@ pusher_client = pusher.Pusher(
 current_dir = os.path.abspath(os.path.dirname(__file__))
 # La carpeta 'static' (con test_suite.html) ahora está DENTRO de la carpeta 'BACKEND'.
 static_dir = os.path.join(current_dir, 'static')
+MODELS_DIR = os.path.join(static_dir, 'models')
 # La carpeta raíz del frontend (GLAUNCHER-WEB) está al mismo nivel que BACKEND.
 frontend_dir = os.path.join(current_dir, '..', 'GLAUNCHER-WEB')
 
 # URL del frontend para redirecciones seguras
 FRONTEND_DASHBOARD_URL = 'https://glauncher.vercel.app/dashboard.html'
+FRONTEND_LOGIN_URL = 'https://glauncher.vercel.app/login.html'
 
 # Configuración de la base de datos.
 # En producción (Render), usa la variable de entorno DATABASE_URL.
 # En local, crea un archivo 'glauncher.db' en la nueva carpeta 'static/data'.
 data_dir = os.path.join(static_dir, 'data')
+os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(data_dir, exist_ok=True) # Asegura que la carpeta 'data' exista.
 local_db_path = os.path.join(data_dir, 'glauncher.db')
 DATABASE_URL = os.environ.get('DATABASE_URL', f'sqlite:///{local_db_path}')
@@ -78,9 +84,19 @@ class User(db.Model):
     role = db.Column(db.String(50), nullable=False, default='Pico de madera')
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     gcoins = db.Column(db.Integer, default=0, nullable=False)
+    phone_number = db.Column(db.String(20), nullable=True)
+    
+    # Campos para el sistema de baneos
+    is_banned = db.Column(db.Boolean, default=False, nullable=False)
+    banned_until = db.Column(db.DateTime, nullable=True)
+    ban_reason = db.Column(db.String(255), nullable=True)
 
-    # Control de frecuencia de mensajes para evitar spam
+    # Campos de control de tiempo
     last_message_time = db.Column(db.DateTime, nullable=True)
+    last_daily_reward_claim = db.Column(db.DateTime, nullable=True)
+
+    # Relación para saber qué cosméticos posee el usuario
+    owned_cosmetics = db.relationship('CosmeticItem', secondary='user_cosmetic', backref='owners')
 
 class ChatMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -89,12 +105,20 @@ class ChatMessage(db.Model):
     user = db.relationship('User', backref='chat_messages')
 
     username = db.Column(db.String(80), nullable=False)
+    # Nuevos campos para guardar el estado del usuario al momento de enviar el mensaje
+    role = db.Column(db.String(50), nullable=False, default='Invitado')
+    username_color = db.Column(db.String(7), nullable=True) # Para guardar colores como #RRGGBB
+
     content = db.Column(db.String(500), nullable=False)
     message_type = db.Column(db.String(10), nullable=False, default='text') 
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        return {'id': self.id, 'username': self.username, 'content': self.content, 'type': self.message_type, 'timestamp': self.timestamp.isoformat()}
+        return {
+            'id': self.id, 'username': self.username, 'content': self.content, 
+            'type': self.message_type, 'timestamp': self.timestamp.isoformat(),
+            'role': self.role, 'username_color': self.username_color
+        }
 
 class News(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -124,16 +148,35 @@ class Download(db.Model):
             'filename': self.filename
         }
 
+class CosmeticItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(255), nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    rarity = db.Column(db.String(50), nullable=False, default='common') # common, rare, epic, legendary
+    category = db.Column(db.String(50), nullable=False) # cape, wings, aura, head, emote
+    image_path = db.Column(db.String(255), nullable=False) # Path a la imagen de preview
+    model_path = db.Column(db.String(255), nullable=False) # Path al modelo 3D
+    is_active = db.Column(db.Boolean, default=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'name': self.name, 'description': self.description,
+            'price': self.price, 'rarity': self.rarity, 'category': self.category,
+            'image_url': self.image_path, # El frontend construirá la URL completa
+        }
+
+# Tabla de asociación para la relación muchos a muchos entre User y CosmeticItem
+user_cosmetic = db.Table('user_cosmetic',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('cosmetic_item_id', db.Integer, db.ForeignKey('cosmetic_item.id'), primary_key=True)
+)
+
 # --- CONFIGURACIÓN DE OAUTH 2.0 (Usando Variables de Entorno) ---
 # Se asume que GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CLIENT_ID, y MICROSOFT_CLIENT_SECRET 
 # están definidos en las variables de entorno de Vercel.
 oauth.register(
     name='google',
-    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
-    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
-    # Usar server_metadata_url es la forma moderna y recomendada.
-    # Descubre automáticamente los endpoints de Google.
-    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={'scope': 'openid email profile'},
 )
 
@@ -154,81 +197,13 @@ def index():
     # Los usuarios normales accederán a través de glauncher.vercel.app, no de la URL de la API.
     return send_from_directory(static_dir, 'test_suite.html')
 
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        data = request.get_json()
-        username = data.get('username')
-        password = data.get('password')
-        user = User.query.filter_by(username=username).first()
-        if user and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
-            session['username_for_2fa'] = username
-            return jsonify({'success': True})
-        else:
-            return jsonify({'success': False, 'message': 'Usuario o contraseña incorrectos.'}), 401
-    return render_template('login.html')
-
-@app.route('/verify-code', methods=['POST'])
-def verify_code():
-    data = request.get_json()
-    code = data.get('code')
-    username = session.get('username_for_2fa')
-    if not username:
-        return jsonify({'success': False, 'message': 'Sesión expirada. Vuelve a intentarlo.'}), 400
-    user = User.query.filter_by(username=username).first()
-    if user and user.security_code == code:
-        session['logged_in'] = True
-        session['username'] = username
-        session.pop('username_for_2fa', None) 
-        return jsonify({'success': True, 'redirect_url': url_for('dashboard')})
-    else:
-        return jsonify({'success': False, 'message': 'Código incorrecto o caducado.'}), 401
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        data = request.get_json()
-        username = data.get('username')
-        password = data.get('password')
-        security_code = data.get('security_code')
-        if User.query.filter_by(username=username).first():
-            return jsonify({'success': False, 'message': 'El nombre de usuario ya existe.'}), 409
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        new_user = User(username=username, password_hash=hashed_password, security_code=security_code)
-        db.session.add(new_user)
-        db.session.commit()
-        return jsonify({'success': True, 'message': '¡Registro exitoso! Ahora puedes iniciar sesión.'})
-    return render_template('register.html')
-
-@app.route('/noticias')
-def noticias():
-    return render_template('noticias.html')
-
-@app.route('/download')
-def download():
-    return render_template('download.html')
-
-@app.route('/radio')
-def radio():
-    return render_template('radio.html')
-
-@app.route('/privacy-policy')
-def privacy_policy():
-    return render_template('privacy-policy.html')
-
-@app.route('/terms-and-conditions')
-def terms_and_conditions():
-    return render_template('terms-and-conditions.html')
-
-@app.route('/shop')
-def shop():
-    return render_template('shop.html')
-
-@app.route('/dashboard')
-def dashboard():
-    # Se elimina la comprobación de inicio de sesión para permitir el acceso público al dashboard.
-    return render_template('dashboard.html')
+@app.route('/redirect')
+def redirect_page():
+    """
+    Página intermedia que recibe el token, lo guarda en localStorage
+    y redirige al dashboard.
+    """
+    return send_from_directory(frontend_dir, 'redirect.html')
 
 @app.route('/logout')
 def logout():
@@ -236,6 +211,125 @@ def logout():
     session.pop('username_for_2fa', None)
     session.pop('username', None)
     return redirect(url_for('index'))
+
+# --- API DE AUTENTICACIÓN ---
+
+@app.route('/api/auth/check_credentials', methods=['POST'])
+def check_credentials():
+    """Paso 1 del login: Verifica usuario y contraseña."""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    user = User.query.filter_by(username=username).first()
+    
+    # Comprobar si el usuario está baneado
+    if user and user.is_banned and user.banned_until and datetime.utcnow() < user.banned_until:
+        tiempo_restante = user.banned_until - datetime.utcnow()
+        dias, resto = divmod(tiempo_restante.total_seconds(), 86400)
+        horas, resto = divmod(resto, 3600)
+        return jsonify({'message': f'Tu cuenta está suspendida. Tiempo restante: {int(dias)}d {int(horas)}h.'}), 403
+
+    if user and user.password_hash and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
+        # Credenciales correctas, el frontend puede proceder al paso 2
+        return jsonify({'message': 'Credenciales válidas.'}), 200
+    else:
+        return jsonify({'message': 'Usuario o contraseña incorrectos.'}), 401
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    """Paso 2 del login: Verifica todo y devuelve un token."""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    security_code = data.get('security_code')
+
+    user = User.query.filter_by(username=username).first()
+
+    if user and user.is_banned and user.banned_until and datetime.utcnow() < user.banned_until:
+        tiempo_restante = user.banned_until - datetime.utcnow()
+        dias, resto = divmod(tiempo_restante.total_seconds(), 86400)
+        horas, _ = divmod(resto, 3600)
+        return jsonify({'message': f'Tu cuenta está suspendida. Tiempo restante: {int(dias)}d {int(horas)}h.'}), 403
+
+    # Verificación completa
+    if user and user.password_hash and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
+        if user.security_code == security_code:
+            # ¡Todo correcto! Generamos el token.
+            token = jwt.encode(
+                {'user_id': user.id, 'username': user.username},
+                app.secret_key,
+                algorithm='HS256'
+            )
+            return jsonify({'message': 'Inicio de sesión exitoso.', 'token': token}), 200
+        else:
+            return jsonify({'message': 'Código de seguridad incorrecto.'}), 401
+    else:
+        # Esta comprobación es redundante si el flujo es correcto, pero es una salvaguarda.
+        return jsonify({'message': 'Usuario o contraseña incorrectos.'}), 401
+
+@app.route('/api/auth/complete_registration', methods=['POST'])
+def complete_social_registration():
+    """
+    Finaliza el registro para un usuario que viene de un login social.
+    Recibe el token temporal y los datos del formulario.
+    """
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'message': 'Token de sesión social no proporcionado.'}), 401
+
+    temp_token = auth_header.split(' ')[1]
+
+    try:
+        # Decodificar el token temporal para obtener el social_id
+        data = jwt.decode(temp_token, app.secret_key, algorithms=['HS256'])
+        social_id = data.get('social_id')
+        if not social_id:
+            raise jwt.InvalidTokenError
+
+        # Buscar al usuario que necesita completar el registro
+        user = User.query.filter_by(social_id=social_id).first()
+        if not user:
+            return jsonify({'message': 'Usuario no encontrado o sesión inválida.'}), 404
+
+        # Procesar datos del formulario
+        username = request.form.get('username')
+        password = request.form.get('password')
+        phone_number = request.form.get('phone_number')
+
+        # Validar que el nombre de usuario no esté ya en uso por otro usuario
+        if User.query.filter(User.username == username, User.social_id != social_id).first():
+            return jsonify({'message': 'Ese nombre de usuario ya está en uso.'}), 409
+
+        # Actualizar datos del usuario
+        user.username = username
+        user.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        if phone_number:
+            user.phone_number = phone_number
+
+        # Procesar la imagen de perfil si se subió
+        if 'profile_picture' in request.files:
+            file = request.files['profile_picture']
+            if file.filename != '':
+                avatar_filename = secrets.token_hex(8) + os.path.splitext(file.filename)[1]
+                avatar_path = os.path.join(static_dir, 'images', 'avatars', avatar_filename)
+                file.save(avatar_path)
+                user.avatar_url = f'/images/avatars/{avatar_filename}'
+
+        db.session.commit()
+
+        # Generar y devolver un token de sesión permanente
+        final_token = jwt.encode({'user_id': user.id, 'username': user.username}, app.secret_key, algorithm='HS256')
+        return jsonify({'message': '¡Registro completado con éxito!', 'token': final_token}), 200
+
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        return jsonify({'message': 'Tu sesión de registro ha expirado. Por favor, vuelve a iniciar sesión.'}), 401
+
+@app.route('/verify-code', methods=['POST'])
+def verify_code():
+    # Esta ruta ya no es necesaria con el nuevo flujo de API, pero la dejamos por si se usa en otro lado.
+    # Se recomienda migrar completamente a /api/auth/login
+    return jsonify({'message': 'Esta ruta está obsoleta. Usa /api/auth/login.'}), 404
 
 # --- API para Noticias ---
 @app.route('/api/news')
@@ -297,24 +391,147 @@ def update_user_role(user):
 # --- APIs de Usuario y Chat ---
 @app.route('/api/user_info')
 def user_info():
-    if 'logged_in' in session and session.get('logged_in'):
-        try:
-            user = User.query.filter_by(username=session.get('username')).first()
-            if user:
-                # Actualiza el rol del usuario antes de enviar la información
-                update_user_role(user)
-                return jsonify({
-                    'username': user.username,
-                    'is_admin': user.is_admin,
-                    'avatar_url': user.avatar_url,
-                    'role': user.role,  # Devuelve el rol actualizado
-                    'gcoins': user.gcoins # Devuelve el saldo de GCoins
-                })
-        finally:
-            # Asegura que la sesión se cierre
-            db.session.remove()
-    return jsonify({'error': 'No autenticado'}), 401
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'No autenticado. Token no proporcionado.'}), 401
 
+    token = auth_header.split(' ')[1]
+    try:
+        data = jwt.decode(token, app.secret_key, algorithms=['HS256'])
+        user = User.query.filter_by(id=data['user_id']).first()
+        if user:
+            update_user_role(user)
+            return jsonify({
+                'username': user.username,
+                'is_admin': user.is_admin,
+                'avatar_url': user.avatar_url,
+                'role': user.role,
+                'gcoins': user.gcoins,
+                'owned_cosmetics': [cosmetic.id for cosmetic in user.owned_cosmetics]
+            })
+        else:
+            return jsonify({'error': 'Usuario no encontrado.'}), 404
+    except jwt.ExpiredSignatureError:
+        return jsonify({'error': 'Token expirado.'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'error': 'Token inválido.'}), 401
+    finally:
+        db.session.remove()
+
+# --- API para la Tienda ---
+@app.route('/api/shop/claim_daily_reward', methods=['POST'])
+def claim_daily_reward():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'No autenticado.'}), 401
+
+    token = auth_header.split(' ')[1]
+    try:
+        data = jwt.decode(token, app.secret_key, algorithms=['HS256'])
+        user = User.query.filter_by(id=data['user_id']).first()
+
+        if not user:
+            return jsonify({'error': 'Usuario no encontrado.'}), 404
+
+        now = datetime.utcnow()
+        # Comprobar si ya se reclamó en las últimas 24 horas
+        if user.last_daily_reward_claim and (now - user.last_daily_reward_claim).total_seconds() < 86400: # 24 horas
+            return jsonify({'message': 'Ya has reclamado tu recompensa diaria.'}), 429
+
+        # Otorgar la recompensa (ej: 50 GCoins)
+        reward_amount = 50
+        user.gcoins += reward_amount
+        user.last_daily_reward_claim = now
+        db.session.commit()
+
+        return jsonify({'message': f'¡Has reclamado {reward_amount} GCoins!', 'new_balance': user.gcoins}), 200
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        return jsonify({'error': 'Token inválido o expirado.'}), 401
+
+@app.route('/api/shop/items')
+def get_shop_items():
+    # Lógica de tienda diaria:
+    # En un futuro, aquí se podría seleccionar un conjunto de ítems basado en la fecha.
+    # Por ahora, devolvemos todos los ítems activos.
+    try:
+        items = CosmeticItem.query.filter_by(is_active=True).all()
+        return jsonify([item.to_dict() for item in items])
+    except Exception as e:
+        print(f"Error al obtener ítems de la tienda: {e}")
+        return jsonify({'error': 'No se pudieron cargar los artículos de la tienda.'}), 500
+
+@app.route('/api/shop/purchase', methods=['POST'])
+def purchase_item():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'message': 'Debes iniciar sesión para comprar.'}), 401
+
+    token = auth_header.split(' ')[1]
+    item_id = request.get_json().get('item_id')
+
+    try:
+        data = jwt.decode(token, app.secret_key, algorithms=['HS256'])
+        user = User.query.filter_by(id=data['user_id']).first()
+        item = CosmeticItem.query.get(item_id)
+
+        if not user or not item:
+            return jsonify({'message': 'Usuario o artículo no encontrado.'}), 404
+
+        if item in user.owned_cosmetics:
+            return jsonify({'message': 'Ya posees este artículo.'}), 409
+
+        if user.gcoins < item.price:
+            return jsonify({'message': 'No tienes suficientes GCoins.'}), 402
+
+        user.gcoins -= item.price
+        user.owned_cosmetics.append(item)
+        db.session.commit()
+
+        return jsonify({'message': f'¡Has comprado "{item.name}" con éxito!', 'new_balance': user.gcoins}), 200
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        return jsonify({'message': 'Tu sesión ha expirado. Vuelve a iniciar sesión.'}), 401
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/api/admin/cosmetics/create', methods=['POST'])
+@admin_required
+def create_cosmetic_item():
+    if 'model_file' not in request.files or 'image_file' not in request.files:
+        return jsonify({'message': 'Faltan archivos de modelo o imagen.'}), 400
+
+    model_file = request.files['model_file']
+    image_file = request.files['image_file']
+    
+    if model_file.filename == '' or image_file.filename == '':
+        return jsonify({'message': 'No se seleccionó ningún archivo.'}), 400
+
+    if model_file and allowed_file(model_file.filename):
+        category = request.form.get('category')
+        # Crear subdirectorio de categoría si no existe
+        category_dir = os.path.join(MODELS_DIR, category)
+        os.makedirs(category_dir, exist_ok=True)
+        
+        model_filename = secrets.token_hex(8) + os.path.splitext(model_file.filename)[1]
+        model_path = os.path.join(category_dir, model_filename)
+        model_file.save(model_path)
+
+        image_filename = secrets.token_hex(8) + os.path.splitext(image_file.filename)[1]
+        image_path = os.path.join(static_dir, 'images', 'shop', image_filename)
+        image_file.save(image_path)
+
+        new_item = CosmeticItem(
+            name=request.form.get('name'), description=request.form.get('description'),
+            price=int(request.form.get('price')), rarity=request.form.get('rarity'),
+            category=category, image_path=f'/images/shop/{image_filename}',
+            model_path=f'/models/{category}/{model_filename}'
+        )
+        db.session.add(new_item)
+        db.session.commit()
+        return jsonify({'message': 'Cosmético creado con éxito.'}), 201
+
+    return jsonify({'message': 'Tipo de archivo de modelo no permitido.'}), 400
 # --- RUTAS Y LÓGICA DEL PANEL DE ADMINISTRADOR ---
 
 def admin_required(f):
@@ -322,8 +539,9 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'logged_in' not in session or not session.get('logged_in'):
-            return redirect(url_for('login'))
-        
+            # Para una API, es mejor devolver un error JSON que una redirección.
+            return jsonify({'message': 'Se requiere inicio de sesión de administrador'}), 401
+
         user = User.query.filter_by(username=session.get('username')).first()
         if not user or not user.is_admin:
             return "Acceso denegado. No tienes permisos de administrador.", 403
@@ -334,8 +552,24 @@ def admin_required(f):
 @app.route('/admin')
 @admin_required
 def admin_panel():
-    all_users = User.query.order_by(User.id.asc()).all()
-    return render_template('admin.html', users=all_users)
+    # Esta ruta ahora solo serviría el HTML si estuviera en el backend.
+    # En una arquitectura SPA, el frontend se encarga de esto.
+    # Devolvemos un mensaje para indicar que la ruta existe pero no renderiza.
+    return "Acceso al panel de administración. El frontend debe renderizar la interfaz."
+
+@app.route('/register', methods=['POST'])
+def register_user():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    security_code = data.get('security_code')
+    if User.query.filter_by(username=username).first():
+        return jsonify({'success': False, 'message': 'El nombre de usuario ya existe.'}), 409
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    new_user = User(username=username, password_hash=hashed_password, security_code=security_code)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'success': True, 'message': '¡Registro exitoso! Ahora puedes iniciar sesión.'}), 201
 
 @app.route('/api/admin/update_user', methods=['POST'])
 @admin_required
@@ -363,7 +597,10 @@ def admin_get_users():
             'role': user.role,
             'is_admin': user.is_admin,
             'registration_date': user.registration_date.isoformat(),
-            'avatar_url': user.avatar_url
+            'avatar_url': user.avatar_url,
+            'is_banned': user.is_banned,
+            'banned_until': user.banned_until.isoformat() if user.banned_until else None,
+            'ban_reason': user.ban_reason
         } for user in users]
         return jsonify(users_data)
     finally:
@@ -371,6 +608,30 @@ def admin_get_users():
 
 
 @app.route('/api/chat_messages')
+@app.route('/api/admin/users/ban', methods=['POST'])
+@admin_required
+def ban_user():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    duration_hours = data.get('duration_hours')
+    reason = data.get('reason')
+
+    user_to_ban = User.query.get(user_id)
+    if not user_to_ban:
+        return jsonify({'message': 'Usuario no encontrado.'}), 404
+    if user_to_ban.is_admin:
+        return jsonify({'message': 'No se puede banear a un administrador.'}), 403
+
+    if duration_hours == 0: # Desbanear
+        user_to_ban.is_banned = False
+        user_to_ban.banned_until = None
+        user_to_ban.ban_reason = None
+    else:
+        user_to_ban.is_banned = True
+        user_to_ban.banned_until = datetime.utcnow() + timedelta(hours=duration_hours)
+        user_to_ban.ban_reason = reason
+    db.session.commit()
+    return jsonify({'message': f'Usuario {user_to_ban.username} ha sido actualizado.'}), 200
 def get_chat_messages():
     since_timestamp_str = request.args.get('since')
     query = ChatMessage.query
@@ -400,20 +661,27 @@ def create_chat_message():
     user = None
     if 'username' in session:
         user = User.query.filter_by(username=session['username']).first()
+        update_user_role(user) # Aseguramos que el rol esté actualizado
         if user:
             now = datetime.utcnow()
             if user.last_message_time and (now - user.last_message_time).total_seconds() < 3: # Límite de 3 segundos
                 return jsonify({'error': 'Estás enviando mensajes demasiado rápido.'}), 429
             user.last_message_time = now
 
-    username = data.get('username', 'Anónimo')
+    username = data.get('username', 'Invitado')
+    role = 'Invitado'
+    username_color = data.get('color')
+
     # Si el usuario está logueado, usamos su nombre de sesión para mayor seguridad
     if user:
         username = user.username
+        role = user.role
 
     new_message = ChatMessage(
         user_id=user.id if user else None,
         username=username,
+        role=role,
+        username_color=username_color,
         content=data.get('content'),
         message_type=data.get('type', 'text')
     )
@@ -427,6 +695,32 @@ def create_chat_message():
         print(f"Error al enviar mensaje por Pusher: {e}") 
         
     return jsonify(new_message.to_dict()), 201
+
+@app.route('/api/chat_messages/<int:message_id>', methods=['DELETE'])
+@admin_required
+def delete_chat_message(message_id):
+    """Elimina un único mensaje del chat."""
+    try:
+        message = ChatMessage.query.get(message_id)
+        if not message:
+            return jsonify({'message': 'Mensaje no encontrado.'}), 404
+        
+        db.session.delete(message)
+        db.session.commit()
+        return jsonify({'message': 'Mensaje eliminado con éxito.'}), 200
+    except Exception as e:
+        return jsonify({'message': f'Error al eliminar el mensaje: {str(e)}'}), 500
+
+@app.route('/api/chat_messages/all', methods=['DELETE'])
+@admin_required
+def delete_all_chat_messages():
+    """Elimina todos los mensajes del chat."""
+    try:
+        db.session.query(ChatMessage).delete()
+        db.session.commit()
+        return jsonify({'message': 'Todos los mensajes han sido eliminados.'}), 200
+    except Exception as e:
+        return jsonify({'message': f'Error al limpiar el chat: {str(e)}'}), 500
 
 @app.route('/api/gemini-chat', methods=['POST'])
 @admin_required
@@ -474,6 +768,27 @@ def gemini_chat():
 
     except Exception as e:
         return jsonify({'answer': f"Ocurrió un error al procesar la solicitud: {e}"}), 500
+
+@app.route('/api/admin/wipe_all_data', methods=['POST'])
+@admin_required
+def wipe_all_data():
+    """
+    Elimina todos los usuarios (excepto administradores) y todos los mensajes del chat.
+    ¡ACCIÓN MUY DESTRUCTIVA!
+    """
+    try:
+        # Eliminar todos los mensajes del chat
+        num_messages_deleted = db.session.query(ChatMessage).delete()
+        
+        # Eliminar todos los usuarios que NO son administradores
+        num_users_deleted = User.query.filter_by(is_admin=False).delete()
+        
+        db.session.commit()
+        
+        return jsonify({'message': f'Limpieza completada. Se eliminaron {num_users_deleted} usuarios y {num_messages_deleted} mensajes.'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': f'Error durante la limpieza: {str(e)}'}), 500
 
 @app.route('/api/youtube/search', methods=['GET'])
 @admin_required
@@ -572,76 +887,94 @@ def login_google():
 
 @app.route('/login/google/callback')
 def auth_google():
-    token = oauth.google.authorize_access_token()
-    # ¡CORRECCIÓN CRÍTICA! Pasar el token explícitamente a userinfo()
-    # para asegurar la robustez en entornos de producción como Render.
-    user_info = oauth.google.userinfo(token=token)
-    social_id = user_info.get('sub')
-    avatar_url = user_info.get('picture')
-
-    if not social_id:
-        return 'Error: No se pudo obtener el ID de usuario de Google.', 400
+    try:
+        token = oauth.google.authorize_access_token()
+        user_info = oauth.google.userinfo(token=token)
+    except Exception as e:
+        # Si falla la autorización (ej. 'invalid_client'), redirige con error.
+        error_message = f"Error de autenticación con Google: {e}"
+        print(f"OAuth Error: {error_message}")
+        return redirect(f"{FRONTEND_LOGIN_URL}?error=auth_failed")
 
     try:
+        social_id = user_info.get('sub')
+        if not social_id:
+            return redirect(f"{FRONTEND_LOGIN_URL}?error=missing_id")
+
+         avatar_url = user_info.get('picture')
         user = User.query.filter_by(provider='google', social_id=social_id).first()
+        jwt_token = jwt.encode(
+                    {'social_id':social_id},
+                    app.secret_key,
+                    algorithm='HS256'
+                )
         if not user:
             username = user_info.get('name', user_info.get('given_name', f"user_{social_id[:8]}"))
             if User.query.filter_by(username=username).first():
                 username = f"{username}_{social_id[:4]}"
-            new_user = User(username=username, provider='google', social_id=social_id, avatar_url=avatar_url)
+            
+            new_user = User(username=username, provider='google', social_id=social_id, avatar_url=avatar_url, security_code=secrets.token_hex(3))
             db.session.add(new_user)
             db.session.commit()
             user = new_user
 
-        session['logged_in'] = True
-        session['username'] = user.username
-        return redirect(FRONTEND_DASHBOARD_URL)
+        # Generar un token JWT para el usuario
+        jwt_token = jwt.encode(
+            {'user_id': user.id, 'username': user.username},
+           app.secret_key,
+            algorithm='HS256'
+        )
+        # Redirigir a la página de redirección con el token
+        return redirect(url_for('redirect_page', token=jwt_token))
     finally:
         db.session.remove()
 
 @app.route('/login/microsoft')
 def login_microsoft():
     # Forzar HTTPS para la URI de redirección de Microsoft también.
-    redirect_uri = url_for('auth_microsoft', _external=True, _scheme='https')
-    return oauth.microsoft.authorize_redirect(redirect_uri)
+       redirect_uri = url_for('auth_microsoft', _external=True, _scheme='https')
 
 @app.route('/login/microsoft/callback')
 def auth_microsoft():
-    # ¡CORREGIDO! Usar oauth.microsoft en lugar de oauth.google
-    token = oauth.microsoft.authorize_access_token()
-    # ¡CORRECCIÓN CRÍTICA! Pasar el token explícitamente a userinfo()
-    # para asegurar la robustez en entornos de producción.
-    user_info = oauth.microsoft.userinfo(token=token)
-    social_id = user_info.get('id')
-    avatar_url = None
-
-    # Intenta obtener la foto de perfil de Microsoft Graph API
     try:
-        photo_response = oauth.microsoft.get('https://graph.microsoft.com/v1.0/me/photo/$value', stream=True)
-        if photo_response.status_code == 200:
-            # En un futuro, aquí se podría procesar y guardar la imagen.
-            # Por ahora, la funcionalidad para obtener la URL directa es compleja, se omite.
-            pass
-    except Exception:
-        pass # Si no hay foto o hay un error, no hacemos nada.
+        token = oauth.microsoft.authorize_access_token()
+        user_info = oauth.microsoft.userinfo(token=token)
+    except Exception as e:
+        error_message = f"Error de autenticación con Microsoft: {e}"
+        print(f"OAuth Error: {error_message}")
+        return redirect(f"{FRONTEND_LOGIN_URL}?error=auth_failed")
 
-    if not social_id:
-        return 'Error: No se pudo obtener el ID de usuario de Microsoft.', 400
 
+        jwt_token = jwt.encode(
+                    {'social_id':social_id},
+                    app.secret_key,
+                    algorithm='HS256'
     try:
+        social_id = user_info.get('sub') # 'sub' es el estándar OpenID
+        if not social_id:
+            return redirect(f"{FRONTEND_LOGIN_URL}?error=missing_id")
+
+        avatar_url = None # Microsoft Graph API para fotos es más complejo
         user = User.query.filter_by(provider='microsoft', social_id=social_id).first()
+
         if not user:
             username = user_info.get('displayName', f"user_{social_id[:8]}")
             if User.query.filter_by(username=username).first():
                 username = f"{username}_{social_id[:4]}"
-            new_user = User(username=username, provider='microsoft', social_id=social_id, avatar_url=avatar_url)
+            
+            new_user = User(username=username, provider='microsoft', social_id=social_id, avatar_url=avatar_url, security_code=secrets.token_hex(3))
             db.session.add(new_user)
             db.session.commit()
             user = new_user
 
-        session['logged_in'] = True
-        session['username'] = user.username
-        return redirect(FRONTEND_DASHBOARD_URL)
+        # Generar un token JWT para el usuario
+        jwt_token = jwt.encode(
+            {'user_id': user.id, 'username': user.username},
+            app.secret_key,
+            algorithm='HS256'
+        )
+        # Redirigir a la página de redirección con el token
+        return redirect(url_for('redirect_page', token=jwt_token))
     finally:
         # Asegura que la sesión de la DB se cierre correctamente.
         db.session.remove()
