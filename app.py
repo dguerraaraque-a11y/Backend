@@ -106,9 +106,6 @@ class ChatMessage(db.Model):
     user = db.relationship('User', backref='chat_messages')
 
     username = db.Column(db.String(80), nullable=False)
-    # Nuevos campos para guardar el estado del usuario al momento de enviar el mensaje
-    role = db.Column(db.String(50), nullable=False, default='Invitado')
-    username_color = db.Column(db.String(7), nullable=True) # Para guardar colores como #RRGGBB
 
     content = db.Column(db.String(500), nullable=False)
     message_type = db.Column(db.String(10), nullable=False, default='text') 
@@ -118,7 +115,8 @@ class ChatMessage(db.Model):
         return {
             'id': self.id, 'username': self.username, 'content': self.content, 
             'type': self.message_type, 'timestamp': self.timestamp.isoformat(),
-            'role': self.role, 'username_color': self.username_color
+            'role': 'Invitado', # Devolver un valor por defecto para compatibilidad con el frontend
+            'username_color': '#ffffff' # Devolver un color por defecto
         }
 
 class News(db.Model):
@@ -664,18 +662,14 @@ def create_chat_message():
 
     username = data.get('username', 'Invitado')
     role = 'Invitado'
-    username_color = data.get('color')
 
     # Si el usuario está logueado, usamos su nombre de sesión para mayor seguridad
     if user:
         username = user.username
-        role = user.role
 
     new_message = ChatMessage(
         user_id=user.id if user else None,
         username=username,
-        role=role,
-        username_color=username_color,
         content=data.get('content'),
         message_type=data.get('type', 'text')
     )
