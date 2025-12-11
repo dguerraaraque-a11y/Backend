@@ -40,6 +40,7 @@ frontend_dir = os.path.join(current_dir, '..', 'GLAUNCHER-WEB')
 # URL del frontend para redirecciones seguras
 FRONTEND_DASHBOARD_URL = 'https://glauncher.vercel.app/dashboard.html'
 FRONTEND_LOGIN_URL = 'https://glauncher.vercel.app/login.html'
+FRONTEND_REDIRECT_URL = 'https://glauncher.vercel.app/redirect.html'
 
 # Configuración de la base de datos.
 # En producción (Render), usa la variable de entorno DATABASE_URL.
@@ -196,14 +197,6 @@ def index():
     # Ahora la ruta raíz del backend sirve la página de pruebas.
     # Los usuarios normales accederán a través de glauncher.vercel.app, no de la URL de la API.
     return send_from_directory(static_dir, 'test_suite.html')
-
-@app.route('/redirect')
-def redirect_page():
-    """
-    Página intermedia que recibe el token, lo guarda en localStorage
-    y redirige al dashboard.
-    """
-    return send_from_directory(frontend_dir, 'redirect.html')
 
 @app.route('/logout')
 def logout():
@@ -901,18 +894,19 @@ def auth_google():
         if not social_id:
             return redirect(f"{FRONTEND_LOGIN_URL}?error=missing_id")
 
-         avatar_url = user_info.get('picture')
+        avatar_url = user_info.get('picture')
         user = User.query.filter_by(provider='google', social_id=social_id).first()
-        jwt_token = jwt.encode(
-                    {'social_id':social_id},
-                    app.secret_key,
-                    algorithm='HS256'
-                )
+
         if not user:
             username = user_info.get('name', user_info.get('given_name', f"user_{social_id[:8]}"))
             if User.query.filter_by(username=username).first():
                 username = f"{username}_{social_id[:4]}"
             
+            # Crear un token temporal con toda la información necesaria
+            temp_token_payload = {'social_id': social_id, 'username': username, 'avatar_url': avatar_url}
+            temp_token = jwt.encode(temp_token_payload, app.secret_key, algorithm='HS256')
+            return redirect(f"{FRONTEND_REDIRECT_URL}?temp_token={temp_token}")
+
             new_user = User(username=username, provider='google', social_id=social_id, avatar_url=avatar_url, security_code=secrets.token_hex(3))
             db.session.add(new_user)
             db.session.commit()
@@ -924,8 +918,7 @@ def auth_google():
            app.secret_key,
             algorithm='HS256'
         )
-        # Redirigir a la página de redirección con el token
-        return redirect(url_for('redirect_page', token=jwt_token))
+        return redirect(f"{FRONTEND_REDIRECT_URL}?token={jwt_token}")
     finally:
         db.session.remove()
 
@@ -944,12 +937,6 @@ def auth_microsoft():
         print(f"OAuth Error: {error_message}")
         return redirect(f"{FRONTEND_LOGIN_URL}?error=auth_failed")
 
-
-        jwt_token = jwt.encode(
-                    {'social_id':social_id},
-                    app.secret_key,
-                    algorithm='HS256'
-    try:
         social_id = user_info.get('sub') # 'sub' es el estándar OpenID
         if not social_id:
             return redirect(f"{FRONTEND_LOGIN_URL}?error=missing_id")
@@ -973,8 +960,7 @@ def auth_microsoft():
             app.secret_key,
             algorithm='HS256'
         )
-        # Redirigir a la página de redirección con el token
-        return redirect(url_for('redirect_page', token=jwt_token))
+        return redirect(f"{FRONTEND_REDIRECT_URL}?token={jwt_token}")
     finally:
         # Asegura que la sesión de la DB se cierre correctamente.
         db.session.remove()
