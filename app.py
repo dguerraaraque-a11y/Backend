@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from flask_migrate import Migrate
 from authlib.integrations.flask_client import OAuth
 import bcrypt
 import jwt
@@ -72,6 +73,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# --- INICIALIZACIÓN DE FLASK-MIGRATE ---
+migrate = Migrate(app, db)
+
 # --- MODELOS DE BASE DE DATOS ---
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -106,7 +110,6 @@ class ChatMessage(db.Model):
     user = db.relationship('User', backref='chat_messages')
 
     username = db.Column(db.String(80), nullable=False)
-
     content = db.Column(db.String(500), nullable=False)
     message_type = db.Column(db.String(10), nullable=False, default='text') 
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
@@ -115,8 +118,6 @@ class ChatMessage(db.Model):
         return {
             'id': self.id, 'username': self.username, 'content': self.content, 
             'type': self.message_type, 'timestamp': self.timestamp.isoformat(),
-            'role': 'Invitado', # Devolver un valor por defecto para compatibilidad con el frontend
-            'username_color': '#ffffff' # Devolver un color por defecto
         }
 
 class News(db.Model):
@@ -177,6 +178,7 @@ user_cosmetic = db.Table('user_cosmetic',
 oauth.register(
     name='google',
     client_kwargs={'scope': 'openid email profile'},
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration'
 )
 
 oauth.register(
@@ -223,8 +225,6 @@ def check_credentials():
 
     if user and user.password_hash and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
         # Credenciales correctas, el frontend puede proceder al paso 2
-        # Guardamos el nombre de usuario en la sesión para el siguiente paso.
-        session['username_for_2fa'] = user.username
         return jsonify({'message': 'Credenciales válidas.'}), 200
     else:
         return jsonify({'message': 'Usuario o contraseña incorrectos.'}), 401
@@ -233,20 +233,20 @@ def check_credentials():
 def api_login():
     """Paso 2 del login: Verifica todo y devuelve un token."""
     data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
     security_code = data.get('security_code')
 
-    # Recuperamos el nombre de usuario de la sesión guardada en el paso 1.
-    username_from_session = session.get('username_for_2fa')
-    if not username_from_session:
-        return jsonify({'message': 'Sesión inválida o expirada. Por favor, vuelve a introducir tu usuario y contraseña.'}), 400
-
-    user = User.query.filter_by(username=username_from_session).first()
+    user = User.query.filter_by(username=username).first()
 
     if user and user.is_banned and user.banned_until and datetime.utcnow() < user.banned_until:
         tiempo_restante = user.banned_until - datetime.utcnow()
         dias, resto = divmod(tiempo_restante.total_seconds(), 86400)
         horas, _ = divmod(resto, 3600)
         return jsonify({'message': f'Tu cuenta está suspendida. Tiempo restante: {int(dias)}d {int(horas)}h.'}), 403
+
+    # Verificación completa
+    if user and user.password_hash and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
         if user.security_code == security_code:
             # ¡Todo correcto! Generamos el token.
             token = jwt.encode(
@@ -254,10 +254,12 @@ def api_login():
                 app.secret_key,
                 algorithm='HS256'
             )
-            session.pop('username_for_2fa', None) # Limpiamos la sesión temporal
             return jsonify({'message': 'Inicio de sesión exitoso.', 'token': token}), 200
         else:
             return jsonify({'message': 'Código de seguridad incorrecto.'}), 401
+    else:
+        # Esta comprobación es redundante si el flujo es correcto, pero es una salvaguarda.
+        return jsonify({'message': 'Usuario o contraseña incorrectos.'}), 401
 
 @app.route('/api/auth/complete_registration', methods=['POST'])
 def complete_social_registration():
@@ -486,23 +488,6 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# --- RUTAS Y LÓGICA DEL PANEL DE ADMINISTRADOR ---
-
-def admin_required(f):
-    """Decorador para proteger rutas de administrador."""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'logged_in' not in session or not session.get('logged_in'):
-            # Para una API, es mejor devolver un error JSON que una redirección.
-            return jsonify({'message': 'Se requiere inicio de sesión de administrador'}), 401
-
-        user = User.query.filter_by(username=session.get('username')).first()
-        if not user or not user.is_admin:
-            return "Acceso denegado. No tienes permisos de administrador.", 403
-        
-        return f(*args, **kwargs)
-    return decorated_function
-
 @app.route('/api/admin/cosmetics/create', methods=['POST'])
 @admin_required
 def create_cosmetic_item():
@@ -540,6 +525,22 @@ def create_cosmetic_item():
         return jsonify({'message': 'Cosmético creado con éxito.'}), 201
 
     return jsonify({'message': 'Tipo de archivo de modelo no permitido.'}), 400
+# --- RUTAS Y LÓGICA DEL PANEL DE ADMINISTRADOR ---
+
+def admin_required(f):
+    """Decorador para proteger rutas de administrador."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'logged_in' not in session or not session.get('logged_in'):
+            # Para una API, es mejor devolver un error JSON que una redirección.
+            return jsonify({'message': 'Se requiere inicio de sesión de administrador'}), 401
+
+        user = User.query.filter_by(username=session.get('username')).first()
+        if not user or not user.is_admin:
+            return "Acceso denegado. No tienes permisos de administrador.", 403
+        
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/admin')
 @admin_required
@@ -598,8 +599,6 @@ def admin_get_users():
     finally:
         db.session.remove()
 
-
-@app.route('/api/chat_messages')
 @app.route('/api/admin/users/ban', methods=['POST'])
 @admin_required
 def ban_user():
@@ -624,6 +623,8 @@ def ban_user():
         user_to_ban.ban_reason = reason
     db.session.commit()
     return jsonify({'message': f'Usuario {user_to_ban.username} ha sido actualizado.'}), 200
+
+@app.route('/api/chat_messages')
 def get_chat_messages():
     since_timestamp_str = request.args.get('since')
     query = ChatMessage.query
@@ -661,7 +662,6 @@ def create_chat_message():
             user.last_message_time = now
 
     username = data.get('username', 'Invitado')
-    role = 'Invitado'
 
     # Si el usuario está logueado, usamos su nombre de sesión para mayor seguridad
     if user:
@@ -897,15 +897,15 @@ def auth_google():
             if User.query.filter_by(username=username).first():
                 username = f"{username}_{social_id[:4]}"
             
-            # 1. Crear el usuario en la base de datos PRIMERO
-            new_user = User(username=username, provider='google', social_id=social_id, avatar_url=avatar_url, security_code=secrets.token_hex(3))
-            db.session.add(new_user)
-            db.session.commit()
-
             # Crear un token temporal con toda la información necesaria
             temp_token_payload = {'social_id': social_id, 'username': username, 'avatar_url': avatar_url}
             temp_token = jwt.encode(temp_token_payload, app.secret_key, algorithm='HS256')
             return redirect(f"{FRONTEND_REDIRECT_URL}?temp_token={temp_token}")
+
+            new_user = User(username=username, provider='google', social_id=social_id, avatar_url=avatar_url, security_code=secrets.token_hex(3))
+            db.session.add(new_user)
+            db.session.commit()
+            user = new_user
 
         # Generar un token JWT para el usuario
         jwt_token = jwt.encode(
@@ -913,7 +913,6 @@ def auth_google():
            app.secret_key,
             algorithm='HS256'
         )
-        # Redirigir a la página de redirección con el token
         return redirect(f"{FRONTEND_REDIRECT_URL}?token={jwt_token}")
     finally:
         db.session.remove()
@@ -922,7 +921,6 @@ def auth_google():
 def login_microsoft():
     # Forzar HTTPS para la URI de redirección de Microsoft también.
        redirect_uri = url_for('auth_microsoft', _external=True, _scheme='https')
-       return oauth.microsoft.authorize_redirect(redirect_uri)
 
 @app.route('/login/microsoft/callback')
 def auth_microsoft():
@@ -934,7 +932,6 @@ def auth_microsoft():
         print(f"OAuth Error: {error_message}")
         return redirect(f"{FRONTEND_LOGIN_URL}?error=auth_failed")
 
-    try:
         social_id = user_info.get('sub') # 'sub' es el estándar OpenID
         if not social_id:
             return redirect(f"{FRONTEND_LOGIN_URL}?error=missing_id")
@@ -947,14 +944,10 @@ def auth_microsoft():
             if User.query.filter_by(username=username).first():
                 username = f"{username}_{social_id[:4]}"
             
-            # 1. Crear el usuario en la base de datos PRIMERO
             new_user = User(username=username, provider='microsoft', social_id=social_id, avatar_url=avatar_url, security_code=secrets.token_hex(3))
             db.session.add(new_user)
             db.session.commit()
-
-            temp_token_payload = {'social_id': social_id, 'username': username, 'avatar_url': avatar_url}
-            temp_token = jwt.encode(temp_token_payload, app.secret_key, algorithm='HS256')
-            return redirect(f"{FRONTEND_REDIRECT_URL}?temp_token={temp_token}")
+            user = new_user
 
         # Generar un token JWT para el usuario
         jwt_token = jwt.encode(
@@ -962,7 +955,6 @@ def auth_microsoft():
             app.secret_key,
             algorithm='HS256'
         )
-        # Redirigir a la página de redirección con el token
         return redirect(f"{FRONTEND_REDIRECT_URL}?token={jwt_token}")
     finally:
         # Asegura que la sesión de la DB se cierre correctamente.
