@@ -1,0 +1,13 @@
+Authlib
+bcrypt
+Flask
+Flask-Cors
+Flask-SQLAlchemy
+google-api-python-client
+google-auth-oauthlib
+google-generativeai
+gunicorn
+Pillow
+psycopg2-binary
+pusher
+PyJWT
