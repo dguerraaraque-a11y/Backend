@@ -85,6 +85,7 @@ class User(db.Model):
     role = db.Column(db.String(50), nullable=False, default='Pico de madera')
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     gcoins = db.Column(db.Integer, default=0, nullable=False)
+    status = db.Column(db.String(50), default='Disponible', nullable=False) # 'Disponible', 'Ausente', 'Jugando'
     phone_number = db.Column(db.String(20), nullable=True)
     
     # Campos para el sistema de baneos
@@ -142,6 +143,16 @@ class AchievementReaction(db.Model):
     reaction_type = db.Column(db.String(50), nullable=False, default='like') # like, love, etc.
     user = db.relationship('User')
     user_achievement = db.relationship('UserAchievement', backref=db.backref('reactions', cascade="all, delete-orphan"))
+
+class LaunchMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), nullable=False)
+    content = db.Column(db.String(200), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {'id': self.id, 'username': self.username, 'content': self.content, 
+                'timestamp': self.timestamp.isoformat()}
 
 class ChatMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -249,6 +260,31 @@ oauth.register(
     server_metadata_url='https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
     client_kwargs={'scope': 'openid profile email User.Read XboxLive.signin'},
 )
+
+# --- DECORADORES DE AUTENTICACIÓN ---
+
+def admin_required(f):
+    """Decorador para proteger rutas de administrador."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Para una API, es mejor verificar un token de admin o una sesión segura.
+        # Esta implementación asume una sesión, pero podría mejorarse con tokens.
+        if 'logged_in' not in session or not session.get('logged_in'):
+            return jsonify({'message': 'Se requiere inicio de sesión de administrador'}), 401
+
+        user = User.query.filter_by(username=session.get('username')).first()
+        if not user or not user.is_admin:
+            return jsonify({'message': 'Acceso denegado. No tienes permisos de administrador.'}), 403
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+def public_endpoint(f):
+    """Decorador para marcar explícitamente una ruta como pública."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        return f(*args, **kwargs)
+    return decorated_function
 
 # --- RUTAS DE LA APLICACIÓN ---
 
@@ -460,6 +496,7 @@ def user_info():
                 'avatar_url': user.avatar_url,
                 'role': user.role,
                 'gcoins': user.gcoins,
+                'status': user.status,
                 'owned_cosmetics': [cosmetic.id for cosmetic in user.owned_cosmetics]
             })
         else:
@@ -500,9 +537,9 @@ def get_friends():
             .filter(Friendship.user_id == user_id, Friendship.status == 'pending').all()
 
         return jsonify({
-            'friends': [{'id': u.id, 'username': u.username, 'avatar_url': u.avatar_url, 'role': u.role} for u in accepted_friends],
-            'pending': [{'id': u.id, 'username': u.username, 'avatar_url': u.avatar_url, 'role': u.role} for u in pending_requests],
-            'sent': [{'id': u.id, 'username': u.username, 'avatar_url': u.avatar_url, 'role': u.role} for u in sent_requests]
+            'friends': [{'id': u.id, 'username': u.username, 'avatar_url': u.avatar_url, 'role': u.role, 'status': u.status} for u in accepted_friends],
+            'pending': [{'id': u.id, 'username': u.username, 'avatar_url': u.avatar_url, 'role': u.role, 'status': u.status} for u in pending_requests],
+            'sent': [{'id': u.id, 'username': u.username, 'avatar_url': u.avatar_url, 'role': u.role, 'status': u.status} for u in sent_requests]
         })
 
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
@@ -650,6 +687,35 @@ def update_profile():
         db.session.rollback()
         return jsonify({'message': f'Ocurrió un error: {str(e)}'}), 500
 
+@app.route('/api/user/status', methods=['POST'])
+def update_status():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header: return jsonify({'message': 'No autenticado.'}), 401
+    token = auth_header.split(' ')[1]
+
+    try:
+        data = jwt.decode(token, app.secret_key, algorithms=['HS256'])
+        user = User.query.get(data['user_id'])
+        if not user:
+            return jsonify({'message': 'Usuario no encontrado.'}), 404
+
+        new_status = request.json.get('status')
+        allowed_statuses = ['Disponible', 'Ausente', 'Jugando']
+        if new_status not in allowed_statuses:
+            return jsonify({'message': 'Estado no válido.'}), 400
+
+        user.status = new_status
+        db.session.commit()
+
+        # Notificar a otros usuarios del cambio de estado
+        pusher_client.trigger(
+            'presence-glauncher-users', 'status-update', 
+            {'user_id': user.id, 'status': user.status}
+        )
+
+        return jsonify({'message': f'Estado actualizado a "{new_status}".'}), 200
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        return jsonify({'message': 'Token inválido o expirado.'}), 401
 # --- API para la Tienda ---
 @app.route('/api/shop/claim_daily_reward', methods=['POST'])
 def claim_daily_reward():
@@ -805,7 +871,7 @@ def create_cosmetic_item():
 
 # --- API PARA GCHAT ---
 @app.route('/api/gchat/history/<int:friend_id>', methods=['GET'])
-def get_gchat_history():
+def get_gchat_history(friend_id):
     auth_header = request.headers.get('Authorization')
     if not auth_header: return jsonify({'error': 'No autenticado'}), 401
     token = auth_header.split(' ')[1]
@@ -823,7 +889,7 @@ def get_gchat_history():
         return jsonify({'error': 'Token inválido'}), 401
 
 @app.route('/api/gchat/send/<int:recipient_id>', methods=['POST'])
-def send_private_message():
+def send_private_message(recipient_id):
     auth_header = request.headers.get('Authorization')
     if not auth_header: return jsonify({'error': 'No autenticado'}), 401
     token = auth_header.split(' ')[1]
@@ -1353,12 +1419,12 @@ def pusher_authentication():
             data = jwt.decode(token, app.secret_key, algorithms=['HS256'])
             user = User.query.get(data['user_id'])
             if user:
-                user_data = {'user_id': user.id, 'user_info': {'username': user.username, 'role': user.role}}
+                user_data = {'user_id': user.id, 'user_info': {'username': user.username, 'role': user.role, 'status': user.status}}
             else: # Token válido pero usuario no encontrado
                 user_data = {'user_id': f"invitado_{secrets.token_hex(4)}"}
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
             # Si el token es inválido, también es un invitado.
-            return jsonify({'message': 'Token de autenticación inválido.'}), 403
+            return "Forbidden: Invalid token", 403
 
     try:
         auth = pusher_client.authenticate(
@@ -1367,6 +1433,44 @@ def pusher_authentication():
         return jsonify(auth)
     except pusher.errors.PusherError as e:
         return f"Error de autenticación de Pusher: {e}", 403
+
+# --- API PARA EL MURO DE LA COMUNIDAD ---
+@app.route('/api/launch_messages', methods=['GET'])
+def get_launch_messages():
+    """Obtiene los mensajes del muro de la comunidad con paginación."""
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 10, type=int)
+    
+    pagination = LaunchMessage.query.order_by(LaunchMessage.timestamp.desc()).paginate(page=page, per_page=limit, error_out=False)
+    messages = pagination.items
+    
+    return jsonify({
+        'messages': [msg.to_dict() for msg in messages],
+        'has_more': pagination.has_next
+    })
+
+@app.route('/api/launch_messages/create', methods=['POST'])
+def create_launch_message():
+    """Crea un nuevo mensaje en el muro de la comunidad."""
+    data = request.get_json()
+    username = data.get('username')
+    content = data.get('content')
+
+    if not username or not content:
+        return jsonify({'message': 'El nombre y el contenido no pueden estar vacíos.'}), 400
+    if len(username) > 25 or len(content) > 200:
+        return jsonify({'message': 'El nombre o el contenido exceden el límite de caracteres.'}), 400
+
+    # Aquí podrías añadir un filtro de profanidad si lo deseas
+
+    new_message = LaunchMessage(username=username, content=content)
+    db.session.add(new_message)
+    db.session.commit()
+
+    # Notificar a todos los clientes a través de Pusher
+    pusher_client.trigger('community_wall', 'new_message', {'message': new_message.to_dict()})
+
+    return jsonify({'message': 'Mensaje publicado con éxito.', 'data': new_message.to_dict()}), 201
 
 # --- FUNCIÓN PARA CREAR TABLAS ---
 def create_tables():

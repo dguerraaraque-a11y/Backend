@@ -43,7 +43,7 @@ git add .
 echo [PASO 5/5] Creando commit inicial y subiendo a la rama 'main'...
 git commit -m "Commit inicial del backend"
 git branch -M main
-git push -u origin main
+git push -f origin main
 
 echo.
 echo ¡Proceso completado! El repositorio ha sido inicializado y publicado.
