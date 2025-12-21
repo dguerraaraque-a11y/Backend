@@ -249,6 +249,9 @@ user_cosmetic = db.Table('user_cosmetic',
 # están definidos en las variables de entorno de Vercel.
 oauth.register(
     name='google',
+    client_id=os.environ.get('GOOGLE_CLIENT_ID') or 'MISSING_GOOGLE_ID',
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET') or 'MISSING_GOOGLE_SECRET',
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={'scope': 'openid email profile'},
 )
 
