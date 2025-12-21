@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
 import bcrypt
@@ -15,6 +16,7 @@ from PIL import Image
 from datetime import timedelta
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+import mimetypes
 
 ALLOWED_EXTENSIONS = {'bbmodel', 'json', 'obj'}
 # --- INICIALIZACIÓN DE LA APLICACIÓN ---
@@ -95,6 +97,7 @@ class User(db.Model):
 
     # Campos de control de tiempo
     last_message_time = db.Column(db.DateTime, nullable=True)
+    last_typing_time = db.Column(db.DateTime, nullable=True)
     last_daily_reward_claim = db.Column(db.DateTime, nullable=True)
 
     # Nuevos campos para estadísticas del dashboard
@@ -183,14 +186,15 @@ class PrivateMessage(db.Model):
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    message_type = db.Column(db.String(10), nullable=False, default='text') # 'text' o 'image'
     is_read = db.Column(db.Boolean, default=False, nullable=False)
 
     sender = db.relationship('User', foreign_keys=[sender_id])
     recipient = db.relationship('User', foreign_keys=[recipient_id])
 
     def to_dict(self):
-        return {'id': self.id, 'sender_id': self.sender_id, 'recipient_id': self.recipient_id,
-                'content': self.content, 'timestamp': self.timestamp.isoformat()}
+        return {'id': self.id, 'sender_id': self.sender_id, 'recipient_id': self.recipient_id, 'content': self.content, 
+                'timestamp': self.timestamp.isoformat(), 'type': self.message_type}
 
 class News(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -458,6 +462,95 @@ def get_downloads():
     downloads = Download.query.all()
     return jsonify([{'id': d.id, 'platform': d.platform, 'version': d.version, 'icon_class': d.icon_class} for d in downloads])
 
+@app.route('/api/download/windows')
+def download_windows():
+    """Ruta para descargar el instalador de Windows (.exe)."""
+    try:
+        # Asegúrate de crear la carpeta 'downloads' en GLAUNCHER-WEB y poner ahí el .exe
+        downloads_dir = os.path.join(frontend_dir, 'downloads')
+        return send_from_directory(downloads_dir, 'GLauncher_Setup.exe', as_attachment=True)
+    except Exception as e:
+        return jsonify({'error': 'El instalador no se encuentra disponible.'}), 404
+
+@app.route('/api/updates/latest')
+def get_latest_version():
+    """Devuelve la última versión disponible para la plataforma solicitada."""
+    platform = request.args.get('platform', 'windows')
+    download = Download.query.filter_by(platform=platform).order_by(Download.id.desc()).first()
+    
+    if download:
+        return jsonify({
+            'version': download.version,
+            'url': 'https://glauncher.vercel.app/download.html'
+        })
+    return jsonify({'version': '1.0.0', 'url': ''})
+
+@app.route('/api/download/update-jar')
+def download_update_jar():
+    """Sirve el archivo .jar suelto para la auto-actualización."""
+    try:
+        # Asegúrate de copiar el GLauncher.jar compilado a la carpeta downloads del servidor
+        downloads_dir = os.path.join(frontend_dir, 'downloads')
+        return send_from_directory(downloads_dir, 'GLauncher.jar', as_attachment=True)
+    except Exception as e:
+        return jsonify({'error': 'Archivo de actualización no encontrado.'}), 404
+
+@app.route('/api/downloads/create', methods=['POST'])
+@admin_required
+def create_download():
+    """Sube un nuevo archivo de descarga y lo registra en la base de datos."""
+    if 'download_file' not in request.files:
+        return jsonify({'message': 'No se subió ningún archivo.'}), 400
+    
+    file = request.files['download_file']
+    platform = request.form.get('platform')
+    version = request.form.get('version')
+    icon_class = request.form.get('icon_class')
+
+    if file.filename == '':
+        return jsonify({'message': 'Nombre de archivo vacío.'}), 400
+
+    if file:
+        filename = secure_filename(file.filename)
+        downloads_dir = os.path.join(frontend_dir, 'downloads')
+        os.makedirs(downloads_dir, exist_ok=True)
+        file_path = os.path.join(downloads_dir, filename)
+        file.save(file_path)
+        
+        new_download = Download(
+            platform=platform,
+            version=version,
+            icon_class=icon_class,
+            file_path=f'/downloads/{filename}',
+            filename=filename
+        )
+        db.session.add(new_download)
+        db.session.commit()
+        return jsonify({'message': 'Archivo subido y registrado con éxito.'}), 201
+    
+    return jsonify({'message': 'Error al subir el archivo.'}), 500
+
+@app.route('/api/downloads/delete/<int:download_id>', methods=['DELETE'])
+@admin_required
+def delete_download(download_id):
+    """Elimina un registro de descarga y el archivo físico asociado."""
+    download = Download.query.get(download_id)
+    if not download:
+        return jsonify({'message': 'Descarga no encontrada.'}), 404
+    
+    try:
+        # Intentar borrar el archivo físico
+        downloads_dir = os.path.join(frontend_dir, 'downloads')
+        file_path = os.path.join(downloads_dir, download.filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        db.session.delete(download)
+        db.session.commit()
+        return jsonify({'message': 'Descarga eliminada correctamente.'}), 200
+    except Exception as e:
+        return jsonify({'message': f'Error al eliminar: {str(e)}'}), 500
+
 # --- Lógica de Roles de Usuario ---
 def update_user_role(user):
     """Calcula y actualiza el rol de un usuario basado en la antigüedad de su cuenta."""
@@ -540,7 +633,7 @@ def get_friends():
             .filter(Friendship.user_id == user_id, Friendship.status == 'pending').all()
 
         return jsonify({
-            'friends': [{'id': u.id, 'username': u.username, 'avatar_url': u.avatar_url, 'role': u.role, 'status': u.status} for u in accepted_friends],
+            'friends': [{'id': u.id, 'username': u.username, 'avatar_url': u.avatar_url, 'role': u.role, 'status': u.status, 'last_typing_time': u.last_typing_time.isoformat() if u.last_typing_time else None} for u in accepted_friends],
             'pending': [{'id': u.id, 'username': u.username, 'avatar_url': u.avatar_url, 'role': u.role, 'status': u.status} for u in pending_requests],
             'sent': [{'id': u.id, 'username': u.username, 'avatar_url': u.avatar_url, 'role': u.role, 'status': u.status} for u in sent_requests]
         })
@@ -900,10 +993,11 @@ def send_private_message(recipient_id):
         data = jwt.decode(token, app.secret_key, algorithms=['HS256'])
         sender_id = data['user_id']
         content = request.json.get('content')
+        message_type = request.json.get('type', 'text')
 
         if not content: return jsonify({'error': 'El mensaje no puede estar vacío'}), 400
 
-        msg = PrivateMessage(sender_id=sender_id, recipient_id=recipient_id, content=content)
+        msg = PrivateMessage(sender_id=sender_id, recipient_id=recipient_id, content=content, message_type=message_type)
         db.session.add(msg)
         db.session.commit()
 
@@ -914,6 +1008,59 @@ def send_private_message(recipient_id):
         return jsonify(msg.to_dict()), 201
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         return jsonify({'error': 'Token inválido'}), 401
+
+@app.route('/api/gchat/typing', methods=['POST'])
+def gchat_typing_event():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header: return jsonify({'error': 'No autenticado'}), 401
+    token = auth_header.split(' ')[1]
+    try:
+        data = jwt.decode(token, app.secret_key, algorithms=['HS256'])
+        user = User.query.get(data['user_id'])
+        if user:
+            user.last_typing_time = datetime.utcnow()
+            db.session.commit()
+            return jsonify({'status': 'ok'}), 200
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        return jsonify({'error': 'Token inválido'}), 401
+
+@app.route('/api/gchat/upload_attachment', methods=['POST'])
+def upload_gchat_attachment():
+    """Sube un archivo adjunto (imagen, video, audio, archivo) para GChat."""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'No autenticado'}), 401
+    
+    try:
+        # Validar el token es una buena práctica aunque no usemos el user_id aquí
+        jwt.decode(auth_header.split(' ')[1], app.secret_key, algorithms=['HS256'])
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        return jsonify({'error': 'Token inválido'}), 401
+
+    if 'file' not in request.files:
+        return jsonify({'error': 'No se encontró el archivo.'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Nombre de archivo vacío.'}), 400
+
+    if file:
+        filename = secure_filename(secrets.token_hex(8) + os.path.splitext(file.filename)[1])
+        upload_dir = os.path.join(frontend_dir, 'uploads', 'chat')
+        os.makedirs(upload_dir, exist_ok=True)
+        file.save(os.path.join(upload_dir, filename))
+        
+        # Detectar tipo de archivo
+        mime_type, _ = mimetypes.guess_type(filename)
+        msg_type = 'file'
+        if mime_type:
+            if mime_type.startswith('image/'): msg_type = 'image'
+            elif mime_type.startswith('video/'): msg_type = 'video'
+            elif mime_type.startswith('audio/'): msg_type = 'audio'
+            
+        return jsonify({'url': f'/uploads/chat/{filename}', 'type': msg_type}), 200
+
 # --- RUTAS Y LÓGICA DEL PANEL DE ADMINISTRADOR ---
 
 def admin_required(f):
