@@ -1,0 +1,31 @@
+# Directorio de módulos de Node.js
+node_modules/
+
+# Archivos de configuración de entorno
+.env
+
+# Archivos de logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Directorios de build
+dist/
+build/
+
+# IDEs y otros archivos locales
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Archivos de base de datos local
+*.db
+*.sqlite
+*.sqlite3
+/static/data/*.db
+
+# Archivos temporales
+tmp/
+temp/

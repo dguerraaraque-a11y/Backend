@@ -1,0 +1,8 @@
+PSQL Command PGPASSWORD=kNxdX6AfK69WaaEOiKF74bjmZnle8Ai7 psql -h dpg-d4p2tmngi27c73efqbm0-a.ohio-postgres.render.com -U admin_glauncher glauncher
+External Database URL postgresql://admin_glauncher:kNxdX6AfK69WaaEOiKF74bjmZnle8Ai7@dpg-d4p2tmngi27c73efqbm0-a.ohio-postgres.render.com/glauncher
+Internal Database URL postgresql://admin_glauncher:kNxdX6AfK69WaaEOiKF74bjmZnle8Ai7@dpg-d4p2tmngi27c73efqbm0-a/glauncher
+Password kNxdX6AfK69WaaEOiKF74bjmZnle8Ai7
+Username admin_glauncher
+Database c
+Port 5432
+Hostname dpg-d4p2tmngi27c73efqbm0-a
