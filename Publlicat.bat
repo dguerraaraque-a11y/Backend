@@ -1,40 +1,43 @@
 @echo off
-title Configurador de Git - Canaima Stream Edition
-echo // Configurando Git para dguerraaraque-a11y //
+title Auto-Push Git - Canaima Stream Edition
+echo // Iniciando automatizacion para dguerraaraque-a11y //
 echo.
 
-:: 1. Configurar datos de usuario
+:: 1. Configurar identidad del commit
 git config user.name "dguerraaraque-a11y"
 git config user.email "dguerrraaraque@gmail.com"
+echo [+] Identidad local configurada: dguerrraaraque@gmail.com
 
-echo [+] Usuario configurado: dguerraaraque-a11y
-echo [+] Correo configurado: dguerrraaraque@gmail.com
-echo.
+:: 2. Definir Token y URL Remota
+:: Usamos el token que me pasaste directamente
+set MY_TOKEN=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
+echo [!] Vinculando repositorio con Token...
 
-:: 2. Verificar archivo .gitignore
-if exist .gitignore (
-    echo [OK] El archivo .gitignore ha sido detectado.
-) else (
-    echo [!] ADVERTENCIA: No se encontro el archivo .gitignore en esta carpeta.
-)
-echo.
-
-:: 3. Configurar el Token para evitar error 403
-echo Por favor, pega tu Token de GitHub (PAT) que empieza por ghp_
-echo (Nota: En la consola no se vera lo que pegas por seguridad)
-set /p MY_TOKEN=^> 
-
-if "%MY_TOKEN%"=="" (
-    echo [!] Error: No ingresaste un token. Abortando.
-    pause
-    exit
-)
-
-:: 4. Actualizar la URL remota con el Token
+:: Cambiamos la URL para que incluya las credenciales y no pida nada mas
 git remote set-url origin https://dguerraaraque-a11y:%MY_TOKEN%@github.com/dguerraaraque-a11y/Backend.git
 
+:: 3. Procesar cambios de Git
+echo [!] Agregando archivos...
+git add .
+
+:: Usamos un mensaje de commit generico para no perder tiempo
+git commit -m "update desde script automatico"
 echo.
-echo [+] URL de repositorio actualizada con exito.
-echo [!] Ya puedes hacer 'git push' sin que te pida contrasenas.
-echo.
+
+:: 4. Subir a GitHub
+echo [!] Intentando subir cambios forzados a main...
+git push -f origin main
+
+if %ERRORLEVEL% EQU 0 (
+    echo.
+    echo =========================================
+    echo [OK] CAMBIOS SUBIDOS EXITOSAMENTE
+    echo =========================================
+) else (
+    echo.
+    echo [X] Error al subir. Revisa tu conexion a internet o el Token.
+)
+
+:: Limpiar variable por seguridad
+set MY_TOKEN=
 pause
