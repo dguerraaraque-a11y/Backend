@@ -29,3 +29,9 @@ build/
 # Archivos temporales
 tmp/
 temp/
+
+# Scripts de Automatización (Contienen tokens o secretos)
+Publlicat.bat
+subir_backend.bat
+forzar_push.bat
+*.bat
