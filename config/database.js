@@ -1,62 +1,63 @@
 const { Sequelize } = require('sequelize');
-const path = require('path');
-const fs = require('fs');
-
-// Cargar variables de entorno
 require('dotenv').config();
 
-const currentDir = __dirname;
-const staticDir = path.join(currentDir, '..', 'static');
-const dataDir = path.join(staticDir, 'data');
+/**
+ * LIMPIEZA DE URL:
+ * Eliminamos el "-a" automáticamente si existe para forzar la red interna de Render.
+ * La red interna ignora las restricciones de IP (Inbound IP Restrictions).
+ */
+let dbUrl = process.env.DATABASE_URL;
 
-// Asegurar que el directorio data exista
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+if (dbUrl) {
+    dbUrl = dbUrl.replace('-a.', '.').replace('-a/', '/');
 }
 
-const localDbPath = path.join(dataDir, 'glauncher.db');
+if (!dbUrl) {
+    console.error('❌ ERROR: DATABASE_URL no encontrada en Environment.');
+    process.exit(1);
+}
 
-let sequelize;
-
-// Verificamos si existe la URL de Postgres
-if (process.env.DATABASE_URL) {
-    console.log('📡 Conectando a PostgreSQL en Render...');
-    
-    sequelize = new Sequelize(process.env.DATABASE_URL, {
-        dialect: 'postgres',
-        protocol: 'postgres',
-        logging: false, 
-        dialectOptions: {
-            ssl: {
-                require: true, 
-                rejectUnauthorized: false // NECESARIO para Render
-            },
-            keepAlive: true
+const sequelize = new Sequelize(dbUrl, {
+    dialect: 'postgres',
+    protocol: 'postgres',
+    logging: false,
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false 
         },
-        pool: {
-            max: 5,
-            min: 0,
-            acquire: 30000,
-            idle: 10000
-        }
-    });
-} else {
-    console.log('📂 Usando SQLite local (No se encontro DATABASE_URL)...');
-    sequelize = new Sequelize({
-        dialect: 'sqlite',
-        storage: localDbPath,
-        logging: false,
-    });
-}
+        keepAlive: true
+    },
+    pool: {
+        max: 5,
+        min: 0,
+        acquire: 60000, 
+        idle: 10000,
+        evict: 1000   
+    }
+});
 
-// Prueba de conexión inmediata para debug
-sequelize.authenticate()
-    .then(() => {
-        console.log('✅ ¡Conexion exitosa con PostgreSQL en Render!');
-    })
-    .catch(err => {
-        console.error('❌ Error de conexion:', err.message);
-        console.log('💡 TIP: Verifica que tu IP este autorizada en el panel de Render (Access Control).');
-    });
+/**
+ * Conexión con reintentos para manejar el arranque en frío de Render Free.
+ */
+const connectDB = async (retries = 5) => {
+    while (retries) {
+        try {
+            console.log('📡 Intentando conexión interna segura...');
+            await sequelize.authenticate();
+            console.log('✅ ¡CONEXIÓN EXITOSA! El servidor está vinculado a la DB.');
+            break;
+        } catch (err) {
+            console.error(`❌ Error (Reintentos restantes: ${retries - 1}):`, err.message);
+            retries -= 1;
+            if (retries === 0) {
+                console.log('💡 TIP: Verifica las credenciales en el panel de Render.');
+            }
+            await new Promise(res => setTimeout(res, 3000));
+        }
+    }
+};
+
+connectDB();
 
 module.exports = sequelize;
