@@ -54,8 +54,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Inicialización de Passport para autenticación
 app.use(passport.initialize());
-require('./auth/google-strategy');
-require('./auth/microsoft-strategy');
+// require('./auth/google-strategy'); // Deshabilitado temporalmente hasta que se cree el archivo
+// require('./auth/microsoft-strategy'); // Deshabilitado temporalmente hasta que se cree el archivo
+
 
 // --- 5. RUTAS ---
 console.log("? Cargando rutas de la API...");
