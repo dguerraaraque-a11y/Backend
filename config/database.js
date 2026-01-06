@@ -18,7 +18,8 @@ const localDbPath = path.join(dataDir, 'glauncher.db');
 
 let sequelize;
 
-if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres')) {
+// Verificamos si existe la URL de Postgres
+if (process.env.DATABASE_URL) {
     console.log('📡 Conectando a PostgreSQL en Render...');
     
     sequelize = new Sequelize(process.env.DATABASE_URL, {
@@ -27,8 +28,8 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres'))
         logging: false, 
         dialectOptions: {
             ssl: {
-                require: true, // Render SIEMPRE requiere SSL
-                rejectUnauthorized: false // Permite certificados autofirmados de Render
+                require: true, 
+                rejectUnauthorized: false // NECESARIO para Render
             },
             keepAlive: true
         },
@@ -40,7 +41,7 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres'))
         }
     });
 } else {
-    console.log('📂 Usando SQLite local...');
+    console.log('📂 Usando SQLite local (No se encontro DATABASE_URL)...');
     sequelize = new Sequelize({
         dialect: 'sqlite',
         storage: localDbPath,
@@ -48,14 +49,14 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres'))
     });
 }
 
-// Prueba de conexión inmediata
+// Prueba de conexión inmediata para debug
 sequelize.authenticate()
     .then(() => {
-        console.log('✅ ¡Conexión exitosa con la base de datos de Render!');
+        console.log('✅ ¡Conexion exitosa con PostgreSQL en Render!');
     })
     .catch(err => {
-        console.error('❌ Error de conexión:', err.message);
-        console.log('💡 Revisa que tu IP no esté bloqueada en Render o que la URL sea correcta.');
+        console.error('❌ Error de conexion:', err.message);
+        console.log('💡 TIP: Verifica que tu IP este autorizada en el panel de Render (Access Control).');
     });
 
 module.exports = sequelize;
