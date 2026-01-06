@@ -3,18 +3,9 @@ require('dotenv').config();
 
 /**
  * CONFIGURACIÓN DE BASE DE DATOS MEJORADA
- * Este código corrige automáticamente el hostname de Render si falta la región.
+ * Este código utiliza directamente la URL de la base de datos proporcionada por el entorno.
  */
-let dbUrl = process.env.DATABASE_URL;
-
-if (dbUrl) {
-    // Si el link es interno y no tiene la región, se la agregamos para evitar el ENOTFOUND
-    if (dbUrl.includes('dpg-') && !dbUrl.includes('-ohio-postgres')) {
-        dbUrl = dbUrl.replace('dpg-d5e0jm63jp1c73f65a60', 'dpg-d5e0jm63jp1c73f65a60-ohio-postgres');
-    }
-    // Limpieza de cualquier sufijo '-a' residual
-    dbUrl = dbUrl.replace('-a.', '.').replace('-a/', '/');
-}
+const dbUrl = process.env.DATABASE_URL;
 
 if (!dbUrl) {
     console.error('❌ ERROR: DATABASE_URL no definida en el panel de Render.');
@@ -28,16 +19,16 @@ const sequelize = new Sequelize(dbUrl, {
     dialectOptions: {
         ssl: {
             require: true,
-            rejectUnauthorized: false 
+            rejectUnauthorized: false
         },
         keepAlive: true
     },
     pool: {
         max: 5,
         min: 0,
-        acquire: 60000, 
+        acquire: 60000,
         idle: 10000,
-        evict: 1000   
+        evict: 1000
     }
 });
 
@@ -47,15 +38,15 @@ const sequelize = new Sequelize(dbUrl, {
 const connectDB = async (retries = 5) => {
     while (retries) {
         try {
-            console.log('📡 Intentando conexión interna (Host validado)...');
+            console.log('📡 Intentando conexión a la base de datos...');
             await sequelize.authenticate();
             console.log('✅ ¡CONEXIÓN EXITOSA! El backend está listo y operando.');
             break;
         } catch (err) {
-            console.error(`❌ Error (Intentos restantes: ${retries - 1}):`, err.message);
+            console.error(`❌ Error de conexión (Intentos restantes: ${retries - 1}):`, err.message);
             retries -= 1;
             if (retries === 0) {
-                console.log('💡 TIP: Asegúrate de que el hostname incluya "-ohio-postgres".');
+                console.log('💡 TIP: Verifica que la variable de entorno DATABASE_URL sea la correcta en Render.');
             }
             // Esperar 3 segundos antes de reintentar
             await new Promise(res => setTimeout(res, 3000));

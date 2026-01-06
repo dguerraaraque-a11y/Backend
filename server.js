@@ -1,109 +1,98 @@
-// Load environment variables from .env file
-require('dotenv').config();
+/**
+ *******************************************************************
+ * GLauncher - Backend Principal (Adaptado para Render.com)
+ *******************************************************************
+ * 
+ * Este archivo es el punto de entrada de la aplicación.
+ * 
+ * Estructura del Archivo:
+ * 1.  IMPORTS: Carga de módulos y configuración inicial.
+ * 2.  INICIALIZACIÓN DE EXPRESS: Creación de la instancia de la app.
+ * 3.  CONFIGURACIÓN DE DIRECTORIOS: Ubicación de archivos estáticos y de subida.
+ * 4.  MIDDLEWARE: Configuración de CORS, JSON parser, Passport, etc.
+ * 5.  RUTAS: Conexión de los diferentes endpoints de la API.
+ * 6.  SINCRONIZACIÓN Y ARRANQUE: Conexión a la BD y arranque del servidor.
+ * 
+ *******************************************************************
+ */
 
+// --- 1. IMPORTS ---
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const Pusher = require('pusher');
-const fs = require('fs');
+const passport = require('passport');
 const sequelize = require('./config/database');
 
-// --- 1. CONFIGURACIÓN DE PUSHER (DEBE IR ANTES DE LAS RUTAS) ---
-const pusher = new Pusher({
-    appId: process.env.PUSHER_APP_ID,
-    key: process.env.PUSHER_KEY,
-    secret: process.env.PUSHER_SECRET,
-    cluster: process.env.PUSHER_CLUSTER,
-    useTLS: true,
-});
-
-// Exportar inmediatamente para evitar avisos de "circular dependency"
-module.exports = { pusher };
-
-// --- 2. CONFIGURACIÓN DE EXPRESS ---
+// --- 2. INICIALIZACIÓN DE EXPRESS ---
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Import all models
-require('./models/User');
-require('./models/Friendship');
-require('./models/Achievement');
-require('./models/UserAchievement');
-require('./models/AchievementReaction');
-require('./models/LaunchMessage');
-require('./models/ChatMessage');
-require('./models/PrivateMessage');
-require('./models/News');
-require('./models/Download');
-require('./models/CosmeticItem');
-require('./models/UserCosmetic');
+// --- 3. CONFIGURACIÓN DE DIRECTORIOS ---
+// Directorios para archivos estáticos y subidas
+const staticDir = path.join(__dirname, 'static');
+const downloadsDir = path.join(__dirname, 'downloads');
+const uploadsDir = path.join(__dirname, 'uploads');
 
-// Passport setup
-const passport = require('passport');
-app.use(passport.initialize());
+console.log(`? Static files served from: ${staticDir}`);
+console.log(`? Downloadable files location: ${downloadsDir}`);
+console.log(`? Uploaded files location: ${uploadsDir}`);
 
-// Middleware
-app.use(cors({ credentials: true, origin: 'https://glauncher.vercel.app' }));
+app.use('/static', express.static(staticDir));
+app.use('/uploads', express.static(uploadsDir));
+
+// --- 4. MIDDLEWARE ---
+// CORS para permitir peticiones del cliente
+app.use(cors({
+    origin: ['http://localhost:3000', 'http://localhost:8080'],
+    credentials: true
+}));
+
+// Body Parsers para procesar JSON y datos de formularios
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- 3. DIRECTORIOS ESTÁTICOS ---
-const staticDir = path.join(__dirname, 'static');
-const modelsDir = path.join(staticDir, 'models');
-const frontendDir = path.join(__dirname, '..', 'GLAUNCHER-WEB');
+// Inicialización de Passport para autenticación
+app.use(passport.initialize());
+require('./auth/google-strategy');
+require('./auth/microsoft-strategy');
 
-// Crear directorios si no existen
-const dirs = [
-    modelsDir,
-    path.join(staticDir, 'data'),
-    path.join(frontendDir, 'downloads'),
-    path.join(frontendDir, 'uploads', 'chat'),
-    path.join(staticDir, 'images', 'avatars'),
-    path.join(staticDir, 'images', 'shop')
-];
+// --- 5. RUTAS ---
+console.log("? Cargando rutas de la API...");
+app.use('/api', require('./routes/auth'));
+app.use('/api', require('./routes/user'));
+app.use('/api', require('./routes/friendship'));
+app.use('/api', require('./routes/news'));
+app.use('/api', require('./routes/downloads'));
+app.use('/api', require('./routes/shop'));
+app.use('/api', require('./routes/achievements'));
+app.use('/api', require('./routes/admin'));
+app.use('/api', require('./routes/gchat'));
+app.use('/api', require('./routes/chat'));
+app.use('/api', require('./routes/pusher-auth'));
+app.use('/api', require('./routes/communityWall'));
+console.log("? Rutas cargadas exitosamente.");
 
-dirs.forEach(dir => {
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
-
-// Servir archivos
-app.use('/static', express.static(staticDir));
-app.use('/images', express.static(path.join(staticDir, 'images')));
-app.use('/models', express.static(modelsDir));
-app.use('/downloads', express.static(path.join(frontendDir, 'downloads')));
-app.use('/uploads/chat', express.static(path.join(frontendDir, 'uploads', 'chat')));
-
-// --- 4. RUTAS (AHORA SÍ PUEDEN IMPORTAR PUSHER) ---
+// Endpoint de bienvenida
 app.get('/', (req, res) => {
-    res.sendFile(path.join(staticDir, 'test_suite.html'));
+    res.send('<h1>? GLauncher Backend</h1><p>El servidor está operativo. ¡Bienvenido!</p>');
 });
 
-// Importación de rutas
-app.use(require('./routes/auth'));
-app.use(require('./routes/user'));
-app.use(require('./routes/friendship'));
-app.use(require('./routes/news'));
-app.use(require('./routes/downloads'));
-app.use(require('./routes/shop'));
-app.use(require('./routes/achievements'));
-app.use(require('./routes/admin'));
-app.use(require('./routes/gchat'));
-app.use(require('./routes/chat'));
-app.use(require('./routes/pusher-auth'));
-app.use(require('./routes/communityWall'));
-
-// --- 5. SINCRONIZACIÓN Y ARRANQUE ---
+// --- 6. SINCRONIZACIÓN Y ARRANQUE ---
+// Sincronizar modelos y arrancar el servidor
+// La conexión a la base de datos se gestiona en 'config/database.js'
 sequelize.sync({ force: false })
     .then(() => {
-        console.log('? Database & tables connected/synced!');
+        console.log('?? Database & tables synced successfully!');
         app.listen(PORT, () => {
-            console.log(`? Server running on port ${PORT}`);
+            console.log(`?? Server running on port ${PORT}. Ready to accept connections.`);
         });
     })
     .catch(err => {
-        console.error('?? Unable to connect to the database:', err.message);
-        console.log('?? TIP: Revisa si tu IP esta en el Allowlist de Render.');
+        console.error('?? Critical Error: Unable to sync database:', err.message);
+        console.error('?? The application will exit.');
+        process.exit(1); // Salir si la BD no se puede sincronizar
     });
 
-// Exportar app al final
+// Exportar la app para posibles pruebas
 module.exports.app = app;
