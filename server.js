@@ -54,13 +54,17 @@ app.use(express.urlencoded({ extended: true }));
 
 // Inicialización de Passport para autenticación
 app.use(passport.initialize());
-// require('./auth/google-strategy'); // Deshabilitado temporalmente hasta que se cree el archivo
-// require('./auth/microsoft-strategy'); // Deshabilitado temporalmente hasta que se cree el archivo
 
 
 // --- 5. RUTAS ---
 console.log("? Cargando rutas de la API...");
-app.use('/api', require('./routes/auth'));
+
+// [CORRECCIÓN] Se registra el enrutador de autenticación sin prefijo global
+// para permitir URLs limpias como '/login/google' y al mismo tiempo
+// mantener las rutas de la API como '/api/auth/login'.
+app.use(require('./routes/auth'));
+
+// Se registra el resto de las rutas de la API con el prefijo '/api'
 app.use('/api', require('./routes/user'));
 app.use('/api', require('./routes/friendship'));
 app.use('/api', require('./routes/news'));
@@ -81,7 +85,6 @@ app.get('/', (req, res) => {
 
 // --- 6. SINCRONIZACIÓN Y ARRANQUE ---
 // Sincronizar modelos y arrancar el servidor
-// La conexión a la base de datos se gestiona en 'config/database.js'
 sequelize.sync({ force: false })
     .then(() => {
         console.log('?? Database & tables synced successfully!');
