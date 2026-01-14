@@ -1,7 +1,0 @@
-#Cuadro de caracteristicas
-<div class="feature-card" data-title="Tienda y Cosméticos" data-description="Personaliza tu experiencia con capas, alas y más, usando nuestro sistema de GCoins." data-image="feature-shop.png">
-    <i class="fas fa-store feature-icon"></i>
-    <h4>Tienda y Cosméticos</h4>
-    <p>Personaliza tu experiencia con capas, alas y más, usando nuestro sistema de GCoins.</p>
-</div>
-

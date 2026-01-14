@@ -1,7 +1,0 @@
-# Archivo robots.txt para GLauncher
-# Permite a todos los rastreadores web (como Google) indexar todo el sitio.
-User-agent: *
-Allow: /
-
-# Le indica a los rastreadores dónde encontrar el mapa del sitio.
-Sitemap: https://glauncher.vercel.app/sitemap.xml
