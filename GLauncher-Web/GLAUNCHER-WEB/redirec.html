@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciando Sesión...</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            text-align: center;
+        }
+        .spinner {
+            border: 8px solid var(--secondary-bg-color);
+            border-top: 8px solid var(--neon-blue);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            animation: spin 1s linear infinite;
+        }
+        h2 {
+            color: var(--text-color-light);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="spinner"></div>
+    <h2>Iniciando sesión...</h2>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const loginToken = urlParams.get('token');
+        const tempToken = urlParams.get('temp_token');
+
+        if (loginToken) {
+            // Si es un token de inicio de sesión, lo guardamos y vamos al dashboard.
+            localStorage.setItem('glauncher_token', loginToken);
+            window.location.href = 'https://glauncher.vercel.app/dashboard.html';
+        } else if (tempToken) {
+            // Si es un token temporal para completar registro, lo guardamos y vamos a esa página.
+            localStorage.setItem('glauncher_temp_token', tempToken);
+            window.location.href = 'https://glauncher.vercel.app/register-complete.html';
+        } else {
+            // Si no hay token, redirigir al login con un error.
+            window.location.href = 'https://glauncher.vercel.app/login.html?error=auth_failed';
+        }
+    </script>
+</body>
+</html>

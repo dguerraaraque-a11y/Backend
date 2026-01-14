@@ -1,0 +1,671 @@
+
+/*
+ * ==================================================================================
+ * GLAUNCHER - ESTILOS ESPECÍFICOS PARA LA PÁGINA DE INICIO (INDEX.HTML)
+ * ==================================================================================
+ */
+
+/* --- Nuevas Animaciones --- */
+@keyframes fade-in-up {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes glow-pulse {
+    50% {
+        box-shadow: 0 0 25px var(--neon-green), 0 0 40px rgba(57, 255, 20, 0.5);
+    }
+}
+
+@keyframes line-wipe-in {
+    from { width: 0%; }
+    to { width: 100%; }
+}
+
+/* --- Estilos para el Contador de Navidad y Nieve --- */
+.countdown-header {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px; /* Añadido para separar del subtítulo */
+    align-items: center;
+    gap: 15px;
+    position: relative;
+}
+
+.snow-toggle-btn {
+    background: none;
+    border: 1px solid var(--neon-blue);
+    color: var(--neon-blue);
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.snow-toggle-btn:hover, .snow-toggle-btn.active {
+    background-color: var(--neon-blue);
+    color: var(--main-bg-color);
+    box-shadow: var(--shadow-blue);
+}
+
+/* --- Sección Principal (Héroe) --- */
+.launcher-section {
+    position: relative;
+    padding: 100px 0; /* Aumentamos el padding para compensar */
+    overflow: hidden;
+}
+
+/* --- Slideshow de Fondo --- */
+.hero-slideshow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+.hero-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    filter: brightness(0.4) blur(3px); /* Oscurecer y desenfocar un poco para leer el texto */
+}
+
+.hero-slide.active {
+    opacity: 1;
+}
+
+.launcher-content-area {
+    display: flex;
+    gap: 50px;
+    align-items: center; /* Centrado verticalmente */
+    padding: 30px 0;
+}
+
+.launcher-text-left {
+    flex: 1;
+    max-width: 50%;
+}
+
+/* Animación de entrada para los elementos del héroe */
+.launcher-text-left > * {
+    opacity: 0;
+    animation: fade-in-up 0.8s ease-out forwards;
+}
+
+.main-headline {
+    font-size: 2.8em; /* Un poco más grande */
+    margin-bottom: 20px;
+    line-height: 1.2;
+    /* Combinamos la animación de entrada con la de pulso */
+    animation: fade-in-up 0.8s ease-out forwards, neon-pulse-rgb 5s infinite alternate 1s;
+}
+.launcher-text-left .project-description { animation-delay: 0.2s; }
+
+.download-button {
+    display: inline-block;
+    padding: 15px 30px;
+    background-color: var(--neon-green);
+    color: var(--main-bg-color) !important;
+    border-radius: var(--border-radius-base);
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 1.1em;
+    box-shadow: var(--shadow-green);
+    transition: all 0.3s ease;
+    /* Combinamos la animación de entrada con la de pulso */
+    opacity: 0; /* Necesario para la animación de entrada */
+    animation: fade-in-up 0.8s ease-out forwards 0.4s, glow-pulse 2.5s infinite 1.2s;
+}
+
+.download-button:hover {
+    background-color: #4cff33;
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(57, 255, 20, 1);
+}
+
+.launcher-visual-right {
+    flex: 1;
+    text-align: center;
+    max-width: 50%;
+    opacity: 0;
+    animation: fade-in-up 0.8s ease-out forwards;
+    animation-delay: 0.3s;
+}
+
+.launcher-gui-img {
+    max-width: 350px; /* Más pequeño */
+    height: auto;
+    /* Quitamos el borde cuadrado y box-shadow */
+    border: none;
+    box-shadow: none;
+    /* Usamos drop-shadow para que la sombra siga la forma de la imagen (si es PNG transparente) */
+    filter: drop-shadow(0 0 20px var(--neon-blue));
+    transition: transform 0.5s ease;
+}
+
+.launcher-gui-img:hover {
+    transform: scale(1.05);
+}
+
+.version-indicator {
+    position: absolute;
+    top: 20px;
+    right: 40px;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 5px 15px;
+    border-radius: 50px;
+    border: 1px solid var(--neon-green);
+    color: var(--neon-green);
+    font-size: 0.9em;
+}
+
+/* --- Sección de Características --- */
+.features-section {
+    padding: 80px 0;
+    background-color: var(--secondary-bg-color);
+    border-top: 2px solid var(--neon-blue);
+    border-bottom: 2px solid var(--neon-blue);
+}
+
+.section-title {
+    text-align: center;
+    font-size: 2.2em;
+    margin-bottom: 50px;
+    color: var(--text-color-light);
+    position: relative;
+}
+
+.section-title span {
+    position: relative;
+    padding: 0 20px;
+    background-color: var(--secondary-bg-color);
+}
+.section-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: var(--gradient-rgb);
+    z-index: 0;
+    animation: line-wipe-in 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation-delay: 0.5s;
+}
+
+.features-interactive-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dos columnas en escritorio */
+    align-items: center;
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    grid-template-areas: "panel grid"; /* Definimos áreas para escritorio */
+}
+
+@media (min-width: 992px) {
+    .features-interactive-container {
+        grid-template-columns: 1fr 1fr; /* Dos columnas en escritorio */
+        align-items: center;
+    }
+}
+
+.features-grid {
+    grid-area: grid; /* Asignamos el área */
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Siempre 2 columnas para las tarjetas */
+    gap: 20px;
+}
+
+.feature-card {
+    background-color: var(--main-bg-color);
+    padding: 30px;
+    border-radius: var(--border-radius-base);
+    text-align: center;
+    border: 2px solid var(--main-bg-color);
+    transition: all 0.3s ease;
+    opacity: 0;
+    animation: fade-in-up 0.8s ease-out forwards;
+}
+
+/* Retraso escalonado para las tarjetas de características */
+.feature-card:nth-child(1) { animation-delay: 0.1s; }
+.feature-card:nth-child(2) { animation-delay: 0.2s; }
+.feature-card:nth-child(3) { animation-delay: 0.3s; }
+.feature-card:nth-child(4) { animation-delay: 0.4s; }
+.feature-card:nth-child(5) { animation-delay: 0.5s; }
+.feature-card:nth-child(6) { animation-delay: 0.6s; }
+
+.feature-card:hover, .feature-card.active {
+    transform: translateY(-10px) rotateZ(-1deg); /* Efecto 3D sutil */
+    border-color: var(--neon-pink);
+    box-shadow: var(--shadow-pink);
+    cursor: pointer;
+}
+
+.feature-card h4 {
+    font-size: 1.1em;
+    margin-top: 15px;
+}
+
+.feature-icon {
+    font-size: 2.5em;
+    color: var(--neon-blue);
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px var(--neon-blue);
+}
+
+/* --- Panel de Visualización Interactivo --- */
+.feature-display-panel {
+    grid-area: panel; /* Asignamos el área */
+    background-color: var(--main-bg-color);
+    padding: 40px;
+    border-radius: var(--border-radius-base);
+    border: 2px solid var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 420px; /* Un poco más de altura */
+    opacity: 0;
+    animation: fade-in-up 0.8s ease-out forwards;
+}
+
+.feature-display-img {
+    max-width: 150px; /* Ajusta el tamaño de la imagen de vista previa */
+    height: auto;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    transition: opacity 0.3s ease, transform 0.3s ease; /* Transición suave para la imagen */
+}
+
+#feature-display-title {
+    font-size: 1.8em;
+    color: var(--neon-green);
+    margin-bottom: 15px;
+    min-height: 58px; /* Evita saltos de altura */
+    transition: opacity 0.3s ease, transform 0.3s ease; /* Transición suave para el título */
+}
+
+#feature-display-description {
+    color: var(--text-color-dark);
+    line-height: 1.6;
+    transition: opacity 0.3s ease, transform 0.3s ease; /* Transición suave para la descripción */
+}
+
+/* Clase para la animación de salida */
+.is-changing {
+    opacity: 0 !important;
+    transform: translateY(10px);
+}
+
+/* --- Sección de Comparativa --- */
+.comparison-section {
+    padding: 80px 20px;
+    background-color: var(--main-bg-color);
+}
+
+.comparison-table-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    overflow-x: auto; /* Para móviles */
+    border-radius: var(--border-radius-base);
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+}
+
+.comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--secondary-bg-color);
+    color: var(--text-color-light);
+}
+
+.comparison-table th, .comparison-table td {
+    padding: 15px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.comparison-table th {
+    background-color: rgba(0, 243, 255, 0.1);
+    color: var(--neon-blue);
+    font-size: 1.2em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Columna de GLauncher destacada */
+.comparison-table th:nth-child(2),
+.comparison-table td:nth-child(2) {
+    background-color: rgba(57, 255, 20, 0.05);
+    border-left: 2px solid var(--neon-green);
+    border-right: 2px solid var(--neon-green);
+}
+
+.comparison-table th:nth-child(2) {
+    color: var(--neon-green);
+    text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+    background-color: rgba(57, 255, 20, 0.1);
+    border-top: 2px solid var(--neon-green);
+}
+
+.comparison-table tr:last-child td:nth-child(2) {
+    border-bottom: 2px solid var(--neon-green);
+}
+
+.check-icon { color: var(--neon-green); }
+.cross-icon { color: var(--neon-pink); }
+.warning-icon { color: #ffcc00; }
+
+/* Ajuste para la primera columna (etiquetas) */
+.comparison-table td:first-child {
+    text-align: left;
+    font-weight: bold;
+    color: var(--neon-blue);
+}
+
+/* --- Sección "Sobre el Proyecto" --- */
+.about-section {
+    padding: 80px 20px;
+    text-align: center;
+}
+
+.creator-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 40px;
+}
+
+.creator-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 4px solid var(--neon-pink);
+    box-shadow: var(--shadow-pink);
+}
+
+/* Clases de utilidad para márgenes */
+.mb-30 { margin-bottom: 30px; }
+
+/* --- Sección de Saludos Especiales --- */
+.special-thanks-section {
+    padding: 60px 20px 80px 20px;
+    background-color: var(--main-bg-color);
+}
+
+.section-subtitle {
+    text-align: center;
+    color: var(--text-color-dark);
+    margin-top: -30px;
+    margin-bottom: 50px;
+    font-style: italic;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.thanks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.thanks-card {
+    background-color: var(--secondary-bg-color);
+    padding: 30px;
+    border-radius: var(--border-radius-base);
+    border: 2px solid var(--secondary-bg-color);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    opacity: 0;
+    animation: fade-in-up 0.8s ease-out forwards;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.thanks-card:hover {
+    transform: scale(1.03) rotateZ(1deg); /* Efecto 3D sutil */
+    border-color: var(--neon-green);
+    box-shadow: var(--shadow-green);
+}
+
+.thanks-card:nth-child(even):hover {
+    border-color: var(--neon-pink);
+    box-shadow: var(--shadow-pink);
+}
+
+.thanks-user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-avatar, .user-avatar-placeholder {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid var(--neon-green);
+    object-fit: cover;
+}
+
+.user-avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--main-bg-color);
+    font-size: 1.5em;
+    color: var(--text-color-dark);
+}
+
+.thanks-quote {
+    font-style: italic;
+    color: var(--text-color-light);
+    background-color: var(--main-bg-color);
+    padding: 20px;
+    border-radius: 5px;
+    border-left: 4px solid var(--neon-blue);
+    position: relative;
+}
+
+.thanks-quote::before {
+    content: '“';
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    font-size: 2em;
+    color: var(--neon-blue);
+    opacity: 0.5;
+    line-height: 1;
+}
+
+/*
+ * ==================================================================================
+ * #MEDIA QUERIES (Responsivo para Móviles y Tabletas)
+ * ==================================================================================
+ */
+
+/* --- Tabletas y Móviles (hasta 768px) --- */
+@media (max-width: 768px) {
+    .launcher-content-area {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .version-indicator {
+        position: relative; /* Cambiamos a relativo */
+        top: auto; right: auto;
+        margin: 0 auto 30px auto; /* Centrado y con margen inferior */
+    }
+
+    .launcher-text-left, .launcher-visual-right {
+        max-width: 100%;
+    }
+
+    .features-interactive-container {
+        grid-template-columns: 1fr; /* Apila el panel y las tarjetas */
+        grid-template-areas: /* Reordenamos para móvil */
+            "grid"
+            "panel";
+    }
+
+    .features-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+    
+    /* En tabletas, el panel de visualización sigue siendo útil, pero lo hacemos más compacto */
+    .feature-display-panel {
+        min-height: auto;
+        padding: 30px;
+        margin-bottom: 20px; /* Espacio si se apila arriba */
+    }
+}
+
+/* --- Móviles Pequeños (hasta 576px) --- */
+@media (max-width: 480px) {
+    .launcher-section {
+        padding: 60px 0;
+    }
+
+    .main-headline {
+        font-size: 2em; /* Ligeramente más pequeño para móviles */
+    }
+
+    .section-title {
+        font-size: 1.8em;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr; /* Una sola columna para las características */
+    }
+
+    .feature-card:hover, .feature-card.active {
+        transform: translateY(-5px) rotateZ(0); /* Animación más sutil en móvil */
+    }
+
+    #feature-display-title {
+        font-size: 1.4em;
+    }
+
+    .thanks-card {
+        padding: 20px;
+    }
+
+    .thanks-user-info {
+        flex-direction: column; /* Apila el avatar y el nombre */
+        align-items: center;
+        text-align: center;
+    }
+}
+
+/* ==================================================================================
+ * ESTILOS PARA EL CONTADOR DE NAVIDAD
+ * ==================================================================================
+ */
+
+/* Estilos NEÓN para el contador de Navidad */
+#christmas-countdown {
+    background: var(--secondary-bg-color);
+    color: white;
+    padding: 2em;
+    border-radius: 15px; /* Esquinas redondeadas */
+    text-align: center;
+    border: 2px solid var(--neon-blue);
+    box-shadow: 0 0 20px var(--neon-pink), inset 0 0 10px rgba(255, 82, 197, 0.3);
+    margin: 2em auto; /* Lo centramos de nuevo */
+    max-width: 800px;
+}
+
+#christmas-countdown h3 {
+    margin-top: 0;
+    font-size: 2em; margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--neon-blue);
+    text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+}
+
+#christmas-countdown .countdown-target-date {
+    font-size: 1.2em;
+    color: var(--text-color-dark);
+    margin-top: -20px;
+    margin-bottom: 30px;
+    text-shadow: 0 0 5px rgba(255,255,255,0.1);
+}
+
+#timer {
+    display: flex;
+    justify-content: center;
+    gap: 1.5em;
+    margin-top: 1.5em;
+    flex-wrap: wrap;
+}
+
+#timer div {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 82, 197, 0.3);
+    padding: 1em;
+    border-radius: 10px;
+    min-width: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 1.1em;
+    font-weight: 300;
+    color: var(--text-color-dark);
+}
+
+#timer div span {
+    font-size: 3em;
+    font-weight: bold;
+    line-height: 1;
+    color: var(--neon-green);
+    text-shadow: 0 0 5px var(--neon-green), 0 0 10px var(--neon-green);
+    transition: all 0.2s ease-in-out;
+}
+
+/* Animación de 'flash' para cuando un número cambia */
+.time-flash {
+    transform: scale(1.15);
+    color: #fff !important;
+    text-shadow: 0 0 15px #fff, 0 0 25px var(--neon-green);
+}
+
+/* Estilo para el mensaje final de Feliz Navidad */
+.christmas-greeting {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 10px #fff, 0 0 20px var(--neon-pink), 0 0 35px var(--neon-pink);
+    animation: greeting-pulse 2s infinite;
+}
+
+@keyframes greeting-pulse {
+    50% { text-shadow: 0 0 15px #fff, 0 0 30px var(--neon-pink), 0 0 50px var(--neon-pink); }
+}
+
+/* --- Estilos para el efecto de nieve (Canvas) --- */
+#snow-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Para que no interfiera con los clics */
+    z-index: 0;
+}

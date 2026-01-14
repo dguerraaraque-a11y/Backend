@@ -1,0 +1,272 @@
+/*
+ * ==================================================================================
+ * GLAUNCHER - ANIMACIONES PARA LA PÁGINA DE DESCARGAS
+ * ==================================================================================
+ */
+@keyframes card-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fade-out {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+/*
+ * ==================================================================================
+ * GLAUNCHER - ESTILOS ESPECÍFICOS PARA LA PÁGINA DE DESCARGAS (REMODELADO)
+ * ==================================================================================
+ */
+
+.download-page {
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+.download-container {
+    width: 100%;
+    max-width: 1100px;
+    text-align: center;
+}
+
+.neon-title {
+    font-size: 2.5em;
+    color: var(--neon-pink);
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px var(--neon-pink);
+    animation: neon-pulse-rgb 5s infinite alternate; /* Animación de pulso para el título */
+}
+
+.subtitle-text {
+    color: var(--text-color-dark);
+    margin-bottom: 40px;
+    font-style: italic;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.download-info-box {
+    padding: 30px;
+    background-color: var(--secondary-bg-color);
+    border: 3px solid var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+    margin-bottom: 40px;
+    border-radius: var(--border-radius-base);
+}
+
+.box-title {
+    font-size: 1.8em;
+    margin-bottom: 15px;
+    border-bottom: 2px dashed rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+    text-shadow: 0 0 8px currentColor; 
+}
+
+.box-description {
+    color: var(--text-color-dark);
+    margin-bottom: 30px;
+}
+
+/* --- Sistema de Pestañas (Tabs) --- */
+.tab-nav {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--secondary-bg-color);
+}
+
+.tab-button {
+    padding: 10px 25px;
+    background-color: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-color-dark);
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    transform: translateY(2px); /* Alinea con el borde inferior del nav */
+}
+
+.tab-button:hover {
+    color: var(--neon-blue);
+}
+
+.tab-button.active {
+    color: var(--neon-pink);
+    border-bottom-color: var(--neon-pink);
+    text-shadow: 0 0 8px var(--neon-pink);
+}
+
+.tab-content {
+    display: none; /* Ocultar por defecto */
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.tab-content.active {
+    display: block; /* Mostrar contenido activo */
+    opacity: 1;
+}
+
+.tab-content.is-exiting {
+    display: block;
+    animation: fade-out 0.15s ease-in-out forwards;
+}
+
+/* --- Grilla de Plataformas (Dentro de las pestañas) --- */
+.download-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+}
+
+.download-card {
+    padding: 25px;
+    background-color: var(--main-bg-color); /* Fondo más oscuro para contraste */
+    border-radius: 10px;
+    border: 2px solid var(--secondary-bg-color);
+    box-shadow: 0 4px 15px rgba(240, 234, 234, 0.4);
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+
+    /* Aplicamos la animación de entrada */
+    opacity: 0; /* Inicia invisible */
+    animation: card-fade-in 0.5s ease-out forwards;
+}
+
+/* Retraso escalonado para la animación de las tarjetas */
+.download-grid .download-card:nth-child(2) { animation-delay: 0.1s; }
+.download-grid .download-card:nth-child(3) { animation-delay: 0.2s; }
+
+.download-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 20px var(--neon-pink);
+}
+
+.card-icon {
+    font-size: 3.5em;
+    margin-bottom: 15px;
+    transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+/* Animación para el icono al pasar el ratón por la tarjeta */
+.download-card:hover .card-icon {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 10px currentColor);
+}
+
+/* Colores de iconos por plataforma */
+.platform-windows .card-icon { color: var(--neon-blue); }
+.platform-macos .card-icon { color: var(--text-color-light); }
+.platform-linux .card-icon { color: var(--neon-pink); }
+.platform-android .card-icon { color: var(--neon-green); }
+.platform-ios .card-icon { color: var(--text-color-dark); }
+
+.download-card h4 {
+    font-size: 1.4em;
+    color: var(--text-color-light);
+    margin-bottom: 10px;
+}
+
+.card-description {
+    color: var(--text-color-dark);
+    font-size: 0.9em;
+    min-height: 40px; /* Espacio para 2 líneas de texto */
+    margin-bottom: 20px;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.download-button {
+    flex-grow: 1;
+    padding: 12px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--neon-blue);
+    background-color: transparent;
+    color: hsl(0, 0%, 100%); /* Color de texto blanco para mejor visibilidad */
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.download-button:hover {
+    background-color: var(--neon-blue);
+    color: #FFFFFF; /* Color de texto blanco puro en hover */
+    box-shadow: 0 0 15px var(--neon-blue);
+}
+
+.download-button.is-disabled {
+    border-color: var(--text-color-dark);
+    color: var(--text-color-dark);
+    cursor: not-allowed;
+    background-color: transparent;
+    filter: grayscale(50%);
+}
+
+.download-button.is-disabled:hover {
+    box-shadow: none;
+    background-color: transparent;
+}
+
+/* --- Requisitos del Sistema --- */
+.requirements-box {
+    padding: 30px;
+    background-color: var(--secondary-bg-color);
+    border: 2px solid var(--neon-pink); 
+    border-radius: var(--border-radius-base);
+    text-align: left;
+    margin-top: 40px;
+}
+
+.req-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.req-list li {
+    margin-bottom: 10px;
+    font-size: 1em;
+    opacity: 0;
+    animation: card-fade-in 0.4s ease-out forwards;
+}
+
+/* Retraso escalonado para la lista de requisitos */
+.req-list li:nth-child(1) { animation-delay: 0.1s; }
+.req-list li:nth-child(2) { animation-delay: 0.2s; }
+.req-list li:nth-child(3) { animation-delay: 0.3s; }
+.req-list li:nth-child(4) { animation-delay: 0.4s; }
+
+.req-list i {
+    margin-right: 10px;
+}
+
+.disclaimer-text {
+    margin-top: 30px;
+    color: var(--text-color-dark);
+    font-size: 0.9em;
+}

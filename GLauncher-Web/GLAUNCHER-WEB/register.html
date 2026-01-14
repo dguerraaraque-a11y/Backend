@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GLauncher - Registrar Cuenta</title>
+    <link rel="icon" type="image/png" href="images/glauncher logo.png">
+    <link rel="stylesheet" href="css/login-styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Spinner de Carga, Notificaciones y Pantalla Offline -->
+    <div id="loader-overlay" class="loader-overlay"><div class="spinner"></div></div>
+    <div id="notification-container"></div>
+    <div id="offline-overlay" class="offline-overlay"><div class="offline-content"><i class="fas fa-wifi"></i><h2>Sin Conexión</h2><p>Revisa tu red e inténtalo de nuevo.</p></div></div>
+
+    <header class="header">
+        <div class="logo-container">
+            <img src="images/glauncher logo.png" alt="Logo de GLauncher" class="logo">
+            <h1>GLauncher</h1>
+        </div>
+        <nav class="auth-buttons">
+            <a href="radio.html" class="auth-button">Radio</a> 
+            <a href="index.html" class="auth-button">Inicio</a> 
+            <a href="noticias.html" class="auth-button">Noticias</a>
+            <a href="download.html" class="auth-button">Descargas</a>
+            <a href="dashboard.html" class="auth-button">Dashboard</a>
+            <a href="login.html" class="auth-button">Iniciar Sesión</a>
+            <a href="register.html" class="auth-button active">Registrar</a>
+            <a href="https://www.youtube.com/@DaniCraftYT25" target="_blank" class="auth-button youtube-button" title="Visita mi canal de YouTube">
+                <i class="fab fa-youtube"></i> Canal
+            </a>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="auth-container">
+            <h2 style="color: var(--neon-pink);"><i class="fas fa-user-plus"></i> Crear Cuenta</h2>
+            
+            <form id="register-form">
+                
+                <div class="form-group">
+                    <input type="text" id="reg-username" name="username" class="neon-input-field" placeholder=" " required autocomplete="username">
+                    <label for="reg-username"><i class="fas fa-user"></i> Nombre de Usuario</label>
+                </div>
+                
+                <div class="form-group">
+                    <input type="password" id="reg-password" name="password" class="neon-input-field" placeholder=" " required autocomplete="new-password">
+                    <label for="reg-password"><i class="fas fa-key"></i> Contraseña</label>
+                </div>
+
+                <div class="form-group">
+                    <input type="password" id="confirm-password" name="confirm_password" class="neon-input-field" placeholder=" " required autocomplete="new-password">
+                    <label for="confirm-password"><i class="fas fa-lock"></i> Confirmar Contraseña</label>
+                </div>
+                
+                <button type="submit" class="auth-button-action" style="background-color: var(--neon-blue); box-shadow: var(--shadow-blue);">
+                    <i class="fas fa-rocket"></i> Registrar y Jugar
+                </button>
+            </form>
+            
+            <div class="social-login-options">
+                <p class="social-login-divider"><span>O regístrate con</span></p>
+                <a href="https://glauncher-api.onrender.com/login/google" role="button" class="social-login-button google" title="Google"><i class="fab fa-google"></i></a>
+                <a href="https://glauncher-api.onrender.com/login/microsoft" role="button" class="social-login-button microsoft" title="Microsoft"><i class="fab fa-microsoft"></i></a>
+            </div>
+
+            <p class="auth-footer-text">
+                ¿Ya tienes cuenta? <a href="login.html" class="neon-hover-text">¡Inicia sesión aquí!</a>
+            </p>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>GLauncher &copy; 2025. Todos los derechos reservados.</p>
+        <p>Desarrollador Principal: <a href="https://www.youtube.com/@DaniCraftYT25" target="_blank" class="neon-hover-text">DaniCraftYT25</a></p>
+    </footer>
+    
+    <!-- Barra de Navegación Inferior (Solo para Móviles) -->
+    <nav class="bottom-nav">
+        <a href="index.html"><i class="fas fa-home"></i><span>Inicio</span></a>
+        <a href="radio.html"><i class="fas fa-broadcast-tower"></i><span>Radio</span></a>
+        <a href="noticias.html"><i class="fas fa-newspaper"></i><span>Noticias</span></a>
+        <a href="download.html"><i class="fas fa-download"></i><span>Descargas</span></a>
+        <a href="login.html" class="active"><i class="fas fa-user-circle"></i><span>Perfil</span></a>
+    </nav>
+
+    <!-- Banner de Consentimiento de Cookies -->
+    <div id="cookie-banner" class="cookie-consent-banner">
+        <p class="cookie-text">
+            Utilizamos cookies para mejorar tu experiencia en nuestro sitio. Al continuar, aceptas nuestro uso de cookies. <a href="privacy-policy.html">Leer más</a>.
+        </p>
+        <button id="accept-cookie-btn" class="auth-button-action cookie-accept-btn" style="background-color: var(--neon-green); box-shadow: var(--shadow-green);">Aceptar</button>
+    </div>
+
+    <script src="js/global-script.js"></script>
+    <script src="js/register-script.js"></script>
+</body>
+</html>

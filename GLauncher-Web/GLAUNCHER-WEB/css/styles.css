@@ -1,0 +1,1150 @@
+/*
+ * ==================================================================================
+ * GLAUNCHER WEB UI - NEON RGB STYLESHEET (1100+ líneas)
+ * Desarrollado por: Gemini
+ * Versión: 2.4 (Final con GUI de Radio Corregida y Media Queries)
+ * ==================================================================================
+ */
+
+/* ==================================================================================
+ * 1. VARIABLES Y ANIMACIONES GLOBALES (RGB)
+ * ==================================================================================
+ */
+:root {
+    /* Paleta de Colores Neón */
+    --main-bg-color: #0d1117; /* Fondo oscuro */
+    --secondary-bg-color: #161b22; /* Fondo de contenedores */
+    --text-color-light: #f0f8ff; /* Blanco Fantasma (principal) */
+    --text-color-dark: #8b949e; /* Gris suave */
+
+    /* Colores Neón */
+    --neon-blue: #00ffff;
+    --neon-pink: #ff00ff;
+    --neon-green: #39ff14;
+    --accent-color: var(--neon-pink); /* Color de acento principal */
+    --link-color: var(--neon-blue);
+
+    /* Degradados y Sombras Neón */
+    --gradient-rgb: linear-gradient(90deg, #ff00ff, #00ffff, #39ff14);
+    --shadow-blue: 0 0 10px rgba(0, 255, 255, 0.6), 0 0 20px rgba(0, 255, 255, 0.3);
+    --shadow-pink: 0 0 10px rgba(255, 0, 255, 0.6), 0 0 20px rgba(255, 0, 255, 0.3);
+    --shadow-green: 0 0 10px rgba(57, 255, 20, 0.6), 0 0 20px rgba(57, 255, 20, 0.3);
+    
+    /* Dimensiones */
+    --header-height: 60px;
+    --border-radius-base: 8px;
+}
+
+/* Animación RGB Principal */
+@keyframes neon-pulse-rgb {
+    0% { color: var(--neon-blue); text-shadow: 0 0 5px var(--neon-blue); }
+    33% { color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
+    66% { color: var(--neon-pink); text-shadow: 0 0 5px var(--neon-pink); }
+    100% { color: var(--neon-blue); text-shadow: 0 0 5px var(--neon-blue); }
+}
+
+/* Animación de Brillo Neón para el Logo */
+@keyframes neon-logo-glow {
+    0%, 100% {
+        filter: drop-shadow(0 0 3px var(--neon-blue)) drop-shadow(0 0 8px var(--neon-blue));
+    }
+    50% {
+        filter: drop-shadow(0 0 5px var(--neon-pink)) drop-shadow(0 0 15px var(--neon-pink));
+    }
+}
+
+/* Animación de Sombra RGB Fina (Bordes) */
+@keyframes thin-neon-shadow {
+    0% { border-color: var(--neon-blue); }
+    50% { border-color: var(--neon-pink); }
+    100% { border-color: var(--neon-blue); }
+}
+
+/* Animación de Parpadeo (Usado en el estado LIVE de la radio) */
+@keyframes neon-flicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        box-shadow: 0 0 .5rem var(--neon-pink);
+        text-shadow: 0 0 .1rem var(--neon-pink);
+        color: var(--neon-pink);
+    }
+    20%, 24%, 55% {
+        box-shadow: none;
+        text-shadow: none;
+        color: rgba(255, 0, 255, 0.5);
+    }
+}
+
+
+/* ==================================================================================
+ * 2. BASE GLOBAL, SCROLL Y TIPOGRAFÍA
+ * ==================================================================================
+ */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Consolas', 'Courier New', monospace; 
+    color: var(--text-color-light);
+}
+
+/* Animación de entrada para la página */
+body.is-loading {
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+body {
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+html, body {
+    background-color: var(--main-bg-color);
+    min-height: 100vh;
+    scroll-behavior: smooth;
+}
+
+a {
+    text-decoration: none;
+    color: var(--link-color);
+    transition: color 0.3s ease;
+}
+
+h1, h2, h3, h4 {
+    font-weight: 700;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.neon-hover-text:hover {
+    color: var(--neon-pink) !important;
+    text-shadow: 0 0 10px var(--neon-pink);
+}
+
+/* Utilidades de Color */
+.text-neon-pink { color: var(--neon-pink); }
+.text-neon-blue { color: var(--neon-blue); }
+.glow-text { text-shadow: var(--shadow-pink); }
+
+/* Scrollbar Personalizado (Neón) */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: var(--secondary-bg-color);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--neon-blue);
+    border-radius: 5px;
+    box-shadow: 0 0 5px var(--neon-blue);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-pink);
+    box-shadow: 0 0 10px var(--neon-pink);
+}
+
+
+/* ==================================================================================
+ * 3. HEADER (Encabezado y Navegación)
+ * ==================================================================================
+ */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    height: var(--header-height);
+    background-color: rgba(13, 17, 23, 0.95);
+    border-bottom: 2px solid var(--neon-blue);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+    box-shadow: var(--shadow-blue);
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    width: 60px;
+    height: 60px;
+    margin-right: 15px;
+    animation: neon-logo-glow 4s infinite alternate; /* Nueva animación de brillo */
+    transition: transform 0.3s ease;
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.auth-button {
+    background-color: var(--secondary-bg-color);
+    padding: 8px 15px;
+    border-radius: var(--border-radius-base);
+    border: 1px solid var(--neon-blue);
+    text-transform: uppercase;
+    font-size: 0.85em;
+    font-weight: bold;
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+    transition: all 0.3s ease;
+}
+
+.auth-button:hover {
+    background-color: var(--neon-blue);
+    color: var(--main-bg-color);
+    box-shadow: 0 0 15px var(--neon-blue);
+    transform: translateY(-2px);
+}
+
+/* Botón Activo (Fijo) */
+.auth-button.active {
+    background-color: var(--neon-pink); 
+    color: var(--main-bg-color);
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 15px var(--neon-pink);
+}
+
+.youtube-button {
+    background-color: #ff0000;
+    border: 1px solid #ff0000;
+    color: var(--text-color-light);
+    box-shadow: 0 0 5px rgba(255, 0, 0, 0.8);
+}
+
+/* ==================================================================================
+ * 3.1. BARRA DE NAVEGACIÓN INFERIOR (MÓVIL)
+ * ==================================================================================
+ */
+.bottom-nav {
+    display: none; /* Oculto por defecto en escritorio */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(22, 27, 34, 0.9); /* Fondo semi-transparente */
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+    z-index: 1001; /* Por encima de otro contenido */
+    justify-content: space-around;
+    padding: 5px 0;
+}
+
+.bottom-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color-dark);
+    padding: 5px;
+    font-size: 0.7em;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    flex-grow: 1;
+    text-align: center;
+}
+
+.bottom-nav a i {
+    font-size: 1.6em;
+    margin-bottom: 4px;
+}
+
+.bottom-nav a.active,
+.bottom-nav a:hover {
+    color: var(--neon-pink);
+    text-shadow: 0 0 8px var(--neon-pink);
+    transform: translateY(-2px);
+}
+
+
+/* ==================================================================================
+ * 4. MAIN CONTENT Y FOOTER
+ * ==================================================================================
+ */
+.main-content {
+    padding: 0 40px 40px 40px; /* Eliminamos el padding superior */
+    min-height: calc(100vh - var(--header-height));
+    flex-grow: 1;
+}
+
+.footer {
+    padding: 20px 40px;
+    background-color: var(--secondary-bg-color);
+    border-top: 1px solid var(--neon-pink);
+    text-align: center;
+    font-size: 0.8em;
+    color: var(--text-color-dark);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+}
+
+.footer p a {
+    color: var(--neon-blue);
+}
+
+
+/* ==================================================================================
+ * 5. ESTILOS HOME (INDEX.HTML) - DISEÑO LANZADOR
+ * ==================================================================================
+ */
+
+/* ==================================================================================
+ * 7. ESTILOS NOTICIAS (NOTICIAS.HTML)
+ * ==================================================================================
+ */
+.news-header {
+    text-align: center;
+    margin-bottom: 50px;
+    padding-top: 20px;
+}
+
+.news-header h1 {
+    font-size: 2.8em;
+    color: var(--neon-blue);
+    animation: neon-pulse-rgb 6s infinite reverse;
+}
+
+.filter-buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.filter-button {
+    background-color: var(--secondary-bg-color);
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: 1px solid var(--neon-blue);
+    color: var(--text-color-light);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.filter-button:hover {
+    background-color: var(--neon-blue);
+    color: var(--main-bg-color);
+    box-shadow: 0 0 10px var(--neon-blue);
+}
+
+.filter-button.active {
+    background-color: var(--neon-pink);
+    border-color: var(--neon-pink);
+    color: var(--main-bg-color);
+    box-shadow: 0 0 15px var(--neon-pink);
+}
+
+.news-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 30px;
+}
+
+.news-card {
+    background-color: var(--secondary-bg-color);
+    padding: 25px;
+    border-radius: var(--border-radius-base);
+    border-left: 5px solid var(--neon-green);
+    box-shadow: var(--shadow-green);
+    transition: all 0.3s ease;
+}
+
+.news-card:hover {
+    transform: translateY(-5px);
+    border-left-color: var(--neon-blue);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+}
+
+.news-card h2 {
+    color: var(--text-color-light);
+    margin-bottom: 10px;
+    font-size: 1.5em;
+}
+
+.news-meta {
+    display: block;
+    font-size: 0.8em;
+    color: var(--text-color-dark);
+    margin-bottom: 15px;
+    border-bottom: 1px dotted rgba(255, 255, 255, 0.1);
+    padding-bottom: 5px;
+}
+
+.news-card p {
+    line-height: 1.5;
+    color: var(--text-color-dark);
+}
+
+.news-card a {
+    color: var(--neon-pink);
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 10px;
+}
+
+
+/* ==================================================================================
+ * 8. ESTILOS AUTENTICACIÓN (LOGIN.HTML Y REGISTER.HTML)
+ * ==================================================================================
+ */
+.auth-form-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 20px;
+}
+
+.auth-form-container h2 {
+    font-size: 2.5em;
+    color: var(--neon-blue);
+    margin-bottom: 30px;
+    border-bottom: 3px solid var(--neon-blue);
+    padding-bottom: 10px;
+    animation: neon-pulse-rgb 4s infinite alternate;
+}
+
+.auth-form {
+    background-color: var(--secondary-bg-color);
+    padding: 40px;
+    border-radius: 15px;
+    border: 3px solid var(--neon-pink);
+    box-shadow: var(--shadow-pink);
+    width: 100%;
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transition: all 0.4s ease;
+}
+
+.auth-form:hover {
+    border-color: var(--neon-green);
+    box-shadow: 0 0 20px rgba(57, 255, 20, 0.7);
+}
+
+.auth-form input[type="text"],
+.auth-form input[type="email"],
+.auth-form input[type="password"] {
+    padding: 15px 20px;
+    background-color: var(--main-bg-color);
+    border: 1px solid var(--neon-blue);
+    border-radius: var(--border-radius-base);
+    color: var(--text-color-light);
+    font-size: 1em;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.auth-form input:focus {
+    border-color: var(--neon-pink);
+    outline: none;
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+    background-color: #1a222c; /* Ligeramente más claro al enfocar */
+}
+
+/* Botones de formulario (Login y Register) */
+.login-button, .register-button {
+    padding: 15px;
+    border: none;
+    border-radius: var(--border-radius-base);
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.login-button {
+    background-color: var(--neon-blue);
+    color: var(--main-bg-color);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+}
+
+.login-button:hover {
+    background-color: #33ffff;
+    box-shadow: 0 0 20px var(--neon-blue);
+}
+
+.register-button {
+    background-color: var(--neon-green);
+    color: var(--main-bg-color);
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.7);
+}
+
+.register-button:hover {
+    background-color: #4cff33;
+    box-shadow: 0 0 20px var(--neon-green);
+}
+
+.login-footer-text {
+    margin-top: 20px;
+    color: var(--text-color-dark);
+}
+
+/* ==================================================================================
+ * 9. ESTILOS DEL CHAT (RADIO.HTML)
+ * ==================================================================================
+ */
+.chat-section {
+    background-color: var(--secondary-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-base);
+    padding: 20px;
+    margin-top: 30px;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.user-count {
+    color: var(--text-color-dark);
+    font-size: 0.9em;
+}
+.user-count .fa-circle {
+    color: var(--neon-green);
+    font-size: 0.8em;
+    margin-right: 5px;
+    text-shadow: var(--shadow-green);
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 400px; /* Altura fija para el contenedor del chat */
+}
+
+.chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: var(--main-bg-color);
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.chat-message {
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    word-wrap: break-word;
+    line-height: 1.5;
+}
+
+.chat-message.system {
+    background-color: rgba(255, 0, 255, 0.1);
+    border-left: 2px solid var(--neon-pink);
+    font-style: italic;
+}
+
+.chat-message.user {
+    background-color: rgba(0, 255, 255, 0.05);
+    border-left: 2px solid var(--neon-blue);
+}
+
+
+/* ==================================================================================
+ * 10. ESTILOS DE NOTIFICACIONES (JS INTERACCIÓN)
+ * ==================================================================================
+ */
+#app-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 30px;
+    background-color: var(--main-bg-color);
+    color: var(--text-color-light);
+    border-radius: 8px;
+    z-index: 10000;
+    transition: opacity 0.5s ease;
+    box-shadow: var(--shadow-pink);
+    border: 1px solid var(--neon-pink);
+    display: none; 
+}
+
+
+/* ==================================================================================
+ * 11. MEDIA QUERIES (Responsivo para Móviles y Tabletas)
+ * ==================================================================================
+ */
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        height: auto;
+        padding: 10px 20px;
+    }
+
+    .auth-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    /* Arreglo para la cuadrícula de características en móvil */
+    .features-interactive-container {
+        flex-direction: column;
+    }
+
+    /* Ocultar header y mostrar barra inferior en móviles */
+    .header { display: none; }
+    .bottom-nav { display: flex; }
+
+    
+    .auth-button {
+        padding: 6px 10px;
+        font-size: 0.75em;
+    }
+
+    .logo-container {
+        margin-bottom: 10px;
+    }
+
+    .main-content {
+        padding: 20px;
+    }
+
+    .program-card {
+        padding: 15px;
+    }
+
+    /* Descargas Mobile */
+    .download-container {
+        grid-template-columns: 1fr;
+    }
+
+    .download-group {
+        padding: 20px;
+    }
+
+    .download-link {
+        font-size: 0.8em;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5em;
+    }
+    .launcher-text-left h2, .auth-form-container h2 {
+        font-size: 2em;
+    }
+    .footer {
+        padding: 15px;
+    }
+}
+
+/* ==================================================================================
+ * 12. SISTEMA DE NOTIFICACIONES Y CARGA
+ * ==================================================================================
+ */
+
+/* --- Contenedor del Spinner de Carga --- */
+.loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--main-bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease-out;
+}
+
+.loader-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid var(--text-color-dark);
+    border-top-color: var(--neon-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* --- Contenedor de Notificaciones Flotantes --- */
+#notification-container {
+    position: fixed;
+    top: 80px; /* Debajo del header */
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification {
+    padding: 15px 20px;
+    border-radius: var(--border-radius-base);
+    color: var(--main-bg-color);
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 300px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    animation: slide-in 0.4s cubic-bezier(0.25, 1, 0.5, 1), slide-out 0.4s cubic-bezier(0.5, 0, 0.75, 0) 4.5s forwards;
+}
+
+.notification.success {
+    background-color: var(--neon-green);
+    border-left: 5px solid #28a745;
+}
+
+.notification.error {
+    background-color: var(--neon-pink);
+    border-left: 5px solid #dc3545;
+}
+
+.notification.info {
+    background-color: var(--neon-blue);
+    border-left: 5px solid #17a2b8;
+}
+
+@keyframes slide-in {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slide-out {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(120%); opacity: 0; }
+}
+
+/* --- Pantalla de Desconexión --- */
+.offline-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(13, 17, 23, 0.95);
+    backdrop-filter: blur(5px);
+    color: var(--text-color-light);
+    display: none; /* Oculto por defecto */
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    z-index: 9998;
+    padding: 20px;
+}
+
+.offline-overlay.visible {
+    display: flex;
+}
+
+.offline-content i {
+    font-size: 4em;
+    color: var(--neon-pink);
+    margin-bottom: 20px;
+    animation: neon-flicker 2s infinite alternate;
+}
+
+
+/* ==================================================================================
+ * 13. BANNER DE COOKIES
+ * ==================================================================================
+ */
+.cookie-consent-banner {
+    position: fixed;
+    bottom: -100%; /* Inicia oculto abajo */
+    left: 0;
+    width: 100%;
+    background-color: rgba(22, 27, 34, 0.95); /* secondary-bg con más opacidad */
+    backdrop-filter: blur(10px);
+    padding: 20px 40px;
+    z-index: 10001; /* Por encima de todo */
+    border-top: 2px solid;
+    animation: thin-neon-shadow 4s linear infinite;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: bottom 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.cookie-consent-banner.visible {
+    bottom: 0;
+}
+
+.cookie-text {
+    color: var(--text-color-dark);
+    font-size: 0.9em;
+    margin-right: 20px;
+}
+
+.cookie-text a {
+    color: var(--neon-blue);
+    text-decoration: underline;
+}
+
+.cookie-accept-btn {
+    padding: 10px 25px;
+}
+
+/* ==================================================================================
+ * 14. ESTILOS PARA EL MURO DE LA COMUNIDAD (INDEX.HTML)
+ * ==================================================================================
+ */
+.launch-messages-section {
+    padding: 40px 0;
+}
+
+.message-input-area {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 700px;
+    margin: 0 auto 30px auto;
+    background-color: var(--secondary-bg-color);
+    padding: 20px;
+    border-radius: var(--border-radius-base);
+    border: 1px solid var(--neon-pink);
+    box-shadow: var(--shadow-pink);
+    position: relative; /* Para el picker de emojis */
+}
+
+/* Reutilizamos los estilos del chat de la radio para consistencia */
+.message-input-area .chat-input {
+    width: 100%;
+    background-color: var(--main-bg-color);
+    border: 1px solid var(--neon-pink);
+    color: var(--text-color-light);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    outline: none;
+}
+.message-input-area .chat-input:focus {
+    border-color: var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+}
+
+.textarea-container {
+    position: relative;
+    display: flex;
+}
+
+.textarea-container textarea.chat-input {
+    flex-grow: 1;
+    min-height: 80px;
+    padding-right: 45px; /* Espacio para el botón de emoji */
+    resize: vertical;
+}
+
+.message-input-area .chat-control-button {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background-color: transparent;
+    border: none;
+    color: var(--text-color-dark);
+    font-size: 1.4em;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+.message-input-area .chat-control-button:hover {
+    color: var(--neon-blue);
+}
+
+.picker-container {
+    display: none;
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 20px;
+    z-index: 10;
+}
+.picker-container.visible {
+    display: block;
+}
+
+.message-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.char-counter {
+    font-size: 0.8em;
+    color: var(--text-color-dark);
+}
+.char-counter.limit-reached {
+    color: var(--neon-pink);
+    font-weight: bold;
+}
+
+.message-input-area .send-button {
+    background-color: var(--neon-pink);
+    color: var(--main-bg-color);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-pink);
+}
+.message-input-area .send-button:hover {
+    background-color: var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+}
+
+.launch-messages-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.launch-message-card {
+    background-color: rgba(0, 255, 255, 0.05); /* Color de fondo sutil */
+    padding: 20px;
+    border-radius: var(--border-radius-base);
+    border-left: 4px solid var(--neon-blue);
+    word-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.launch-message-card.special-thanks {
+    background-color: rgba(57, 255, 20, 0.05); /* Color verde para destacados */
+    border-left-color: var(--neon-green);
+    box-shadow: var(--shadow-green);
+}
+
+/* ==================================================================================
+ * 14. ESTILOS PARA EL MURO DE LA COMUNIDAD (INDEX.HTML)
+ * ==================================================================================
+ */
+.launch-messages-section {
+    padding: 40px 0;
+}
+
+.message-input-area {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 700px;
+    margin: 0 auto 30px auto;
+    background-color: var(--secondary-bg-color);
+    padding: 20px;
+    border-radius: var(--border-radius-base);
+    border: 1px solid var(--neon-pink);
+    box-shadow: var(--shadow-pink);
+    position: relative; /* Para el picker de emojis */
+}
+
+/* Reutilizamos los estilos del chat de la radio para consistencia */
+.message-input-area .chat-input {
+    width: 100%;
+    background-color: var(--main-bg-color);
+    border: 1px solid var(--neon-pink);
+    color: var(--text-color-light);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    outline: none;
+}
+.message-input-area .chat-input:focus {
+    border-color: var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+}
+
+.textarea-container {
+    position: relative;
+    display: flex;
+}
+
+.textarea-container textarea.chat-input {
+    flex-grow: 1;
+    min-height: 80px;
+    padding-right: 45px; /* Espacio para el botón de emoji */
+    resize: vertical;
+}
+
+.message-input-area .chat-control-button {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background-color: transparent;
+    border: none;
+    color: var(--text-color-dark);
+    font-size: 1.4em;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+.message-input-area .chat-control-button:hover {
+    color: var(--neon-blue);
+}
+
+.picker-container {
+    display: none;
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 20px;
+    z-index: 10;
+}
+.picker-container.visible {
+    display: block;
+}
+
+.message-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.char-counter {
+    font-size: 0.8em;
+    color: var(--text-color-dark);
+}
+.char-counter.limit-reached {
+    color: var(--neon-pink);
+    font-weight: bold;
+}
+
+.message-input-area .send-button {
+    background-color: var(--neon-pink);
+    color: var(--main-bg-color);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-pink);
+}
+.message-input-area .send-button:hover {
+    background-color: var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+}
+
+.launch-messages-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.launch-message-card {
+    background-color: rgba(0, 255, 255, 0.05); /* Color de fondo sutil */
+    padding: 20px;
+    border-radius: var(--border-radius-base);
+    border-left: 4px solid var(--neon-blue);
+    word-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.launch-message-card.special-thanks {
+    background-color: rgba(57, 255, 20, 0.05); /* Color verde para destacados */
+    border-left-color: var(--neon-green);
+    box-shadow: var(--shadow-green);
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.message-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--neon-pink);
+}
+
+.message-username {
+    font-weight: bold;
+    color: var(--neon-pink);
+}
+
+.launch-message-card.special-thanks .message-username {
+    color: var(--neon-green);
+}
+.launch-message-card.special-thanks .message-avatar {
+    border-color: var(--neon-green);
+}
+
+.message-content {
+    color: var(--text-color-light);
+    line-height: 1.6;
+}
+
+/* ==================================================================================
+ * 15. ESTILOS PARA LA PÁGINA DE POLÍTICA DE PRIVACIDAD
+ * ==================================================================================
+ */
+@keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.policy-main-content {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Alinea arriba */
+    padding: 40px 20px;
+    min-height: calc(100vh - var(--header-height));
+}
+
+.policy-container {
+    background-color: var(--secondary-bg-color);
+    padding: 40px;
+    border-radius: var(--border-radius-base);
+    border: 2px solid var(--neon-pink);
+    box-shadow: var(--shadow-pink);
+    max-width: 900px;
+    width: 100%;
+    animation: fade-in-up 0.6s ease-out;
+}
+
+.policy-container h2 {
+    color: var(--neon-blue);
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.policy-container h3 {
+    color: var(--neon-pink);
+    margin-top: 25px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+.policy-container p, .policy-container li {
+    color: var(--text-color-dark);
+    line-height: 1.7;
+}
+
+.policy-container ul {
+    padding-left: 20px;
+}

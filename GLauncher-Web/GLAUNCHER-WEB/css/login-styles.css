@@ -1,0 +1,160 @@
+/*
+ * ==================================================================================
+ * GLAUNCHER - ESTILOS DE AUTENTICACIÓN (LOGIN Y REGISTRO) - v2.0 Remodelado
+ * ==================================================================================
+ */
+
+.main-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 120px); /* header + footer height */
+    padding: 20px;
+    animation: fade-in-up 0.8s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Contenedor principal del formulario */
+.auth-container {
+    width: 100%;
+    max-width: 450px;
+    padding: 40px;
+    background-color: rgba(22, 27, 34, 0.9); /* secondary-bg con transparencia */
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius-base);
+    border: 2px solid var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+    text-align: center;
+    z-index: 2;
+    animation: neon-border-pulse-rgb 8s infinite;
+}
+
+.auth-container h2 {
+    font-size: 2em;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Estilos para el formulario y sus campos */
+.form-group {
+    position: relative;
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.form-group label {
+    position: absolute;
+    top: 50%;
+    left: 15px;
+    transform: translateY(-50%);
+    color: var(--text-color-dark);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    background-color: var(--secondary-bg-color);
+    padding: 0 5px;
+}
+
+.neon-input-field {
+    width: 100%;
+    padding: 14px 20px;
+    background-color: transparent;
+    border: 1px solid var(--text-color-dark);
+    border-radius: var(--border-radius-base);
+    color: var(--text-color-light);
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+
+.neon-input-field:focus {
+    outline: none;
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 10px var(--shadow-pink);
+}
+
+/* Mover la etiqueta hacia arriba cuando el input tiene foco o contenido */
+.neon-input-field:focus + label,
+.neon-input-field:not(:placeholder-shown) + label {
+    top: 0;
+    left: 10px;
+    font-size: 0.75em;
+    color: var(--neon-pink);
+}
+
+.auth-button-action {
+    width: 100%;
+    border: none;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;    
+    font-size: 1.1em;
+    padding: 15px 30px;
+    border-radius: var(--border-radius-base);
+    margin-top: 25px;
+    transition: all 0.3s ease;
+    color: var(--main-bg-color);
+}
+
+.auth-button-action:hover {
+    transform: translateY(-3px);
+}
+
+/* Estilos para la sección del código 2FA */
+.code-flow-info {
+    color: var(--text-color-dark);
+    font-style: italic;
+    margin-bottom: 25px;
+}
+.code-flow-info i {
+    margin-right: 8px;
+}
+
+/* Texto de pie de formulario */
+.auth-footer-text {
+    margin-top: 25px;
+    color: var(--text-color-dark);
+}
+
+/* Opciones de inicio de sesión con redes sociales */
+.social-login-options {
+    margin-top: 25px;
+    width: 100%;
+    text-align: center;
+}
+
+.social-login-divider {
+    display: flex;
+    align-items: center;
+    color: var(--text-color-dark);
+    margin-bottom: 20px;
+    font-size: 0.9em;
+}
+
+.social-login-divider::before,
+.social-login-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.social-login-divider:not(:empty)::before { margin-right: .5em; }
+.social-login-divider:not(:empty)::after { margin-left: .5em; }
+
+.social-login-button {
+    display: inline-block;
+    width: 48px;
+    height: 48px;
+    line-height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    margin: 0 10px;
+    font-size: 1.2em;
+    transition: all 0.3s ease;
+}
+
+.social-login-button:hover { color: var(--main-bg-color); transform: translateY(-2px); }
+.social-login-button.google:hover { background-color: #4285F4; border-color: #4285F4; box-shadow: 0 0 15px rgba(66, 133, 244, 0.7); }
+.social-login-button.microsoft:hover { background-color: #00A4EF; border-color: #00A4EF; box-shadow: 0 0 15px rgba(0, 164, 239, 0.7); }

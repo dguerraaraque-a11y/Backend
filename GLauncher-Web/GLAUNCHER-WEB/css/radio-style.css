@@ -1,0 +1,1007 @@
+/*
+ * ==================================================================================
+ * GLAUNCHER - ESTILOS ESPECÍFICOS PARA LA PÁGINA DE RADIO (RADIO.HTML)
+ * ==================================================================================
+ */
+
+/* 
+ * #ANIMACIONES 
+ */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes neon-border-pulse-rgb {
+    0% {
+        border-color: var(--neon-blue);
+        box-shadow: var(--shadow-blue);
+    }
+    33% {
+        border-color: var(--neon-pink);
+        box-shadow: var(--shadow-pink);
+    }
+    66% {
+        border-color: var(--neon-green);
+        box-shadow: var(--shadow-green);
+    }
+    100% {
+        border-color: var(--neon-blue);
+        box-shadow: var(--shadow-blue);
+    }
+}
+
+/* 
+ * #ESTILOS GENERALES DE LA PÁGINA 
+ */
+.radio-page-title {
+    text-align: center;
+    font-size: 2.5em;
+    margin-bottom: 40px;
+    color: var(--neon-blue);
+    animation: neon-pulse-rgb 5s infinite alternate, fade-in-up 0.8s ease-out;
+}
+
+/*
+ * #NUEVO REPRODUCTOR DE RADIO (IFRAME)
+ */
+.radio-player-container {
+    width: 100%;
+    max-width: 500px; /* Ancho máximo del reproductor */
+    margin: 0 auto 50px auto; /* Centra el contenedor horizontalmente */
+    padding: 20px;
+    background-color: var(--secondary-bg-color);
+    border-radius: 15px; /* Bordes un poco redondeados */
+    text-align: center;
+    /* Animación de entrada y pulso de color en el borde */
+    animation: fade-in-up 0.8s ease-out, neon-border-pulse-rgb 5s infinite;
+}
+
+.radio-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.radio-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+}
+
+.radio-info .live-indicator {
+    margin-bottom: 5px;
+}
+
+.listeners-count {
+    font-size: 0.9em;
+    color: var(--text-color-dark);
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+.listeners-count .fa-headphones {
+    color: var(--neon-blue);
+    margin-right: 5px;
+}
+
+.radio-iframe {
+    width: 100%;
+    height: 120px; /* Altura ajustada para el reproductor de audio */
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* 
+ * #REPRODUCTOR DE RADIO 
+ */
+.radio-player-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background-color: var(--secondary-bg-color);
+    border-radius: 15px;
+    border: 4px solid var(--neon-pink);
+    box-shadow: var(--shadow-pink);
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto 50px auto;
+    animation: thin-neon-shadow 5s infinite alternate, fade-in-up 0.8s ease-out 0.2s;
+    opacity: 0; /* Para la animación de entrada */
+    animation-fill-mode: forwards;
+}
+
+.radio-bar-logo {
+    width: 80px;
+    height: auto;
+    border-radius: 10px;
+}
+
+.radio-bar-info {
+    flex-grow: 1;
+}
+
+.live-indicator {
+    background-color: var(--neon-pink);
+    color: var(--main-bg-color);
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.7em;
+    font-weight: bold;
+    text-transform: uppercase;
+    animation: neon-flicker 2s infinite;
+}
+
+.radio-bar-title {
+    font-size: 1.3em;
+    margin-top: 5px;
+}
+
+.radio-bar-status {
+    font-size: 0.9em;
+    color: var(--text-color-dark);
+    font-style: italic;
+}
+
+/* Ocultar el reproductor nativo, usaremos controles JS */
+#radio-stream {
+    display: none; 
+}
+
+.radio-bar-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.control-button {
+    background-color: transparent;
+    color: var(--neon-blue);
+    width: 50px;
+    height: 50px;
+    font-size: 1.5em;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-button:hover {
+    background-color: rgba(0, 255, 255, 0.1);
+    color: var(--neon-pink);
+    transform: scale(1.1);
+}
+
+.play-pause-button {
+    width: 60px;
+    height: 60px;
+    font-size: 1.8em;
+    border-color: var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+}
+
+.play-pause-button.playing {
+    color: var(--neon-green);
+    border-color: var(--neon-green);
+    box-shadow: var(--shadow-green);
+}
+
+.play-pause-button.playing:hover {
+    background-color: rgba(57, 255, 20, 0.1);
+    color: var(--neon-pink);
+}
+
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    /* Para la funcionalidad de mostrar/ocultar en móvil */
+    position: relative; 
+    justify-content: flex-end;
+    flex-grow: 1;
+}
+
+.volume-button {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2em;
+}
+
+#volume-slider {
+    width: 100px;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--text-color-dark);
+    border-radius: 5px;
+    outline: none;
+    transition: opacity 0.2s;
+    opacity: 1; /* Visible por defecto en escritorio */
+    transition: all 0.3s ease;
+}
+
+/* Ocultamos el slider por defecto en móvil y lo posicionamos */
+@media (max-width: 768px) {
+    #volume-slider { display: none; }
+}
+
+#volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--neon-blue);
+    cursor: pointer;
+    box-shadow: 0 0 5px var(--neon-blue);
+}
+
+/* 
+ * #SECCIÓN DE PROGRAMACIÓN 
+ */
+.programming-section {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.programming-title {
+    font-size: 2em;
+    color: var(--neon-pink);
+    margin-bottom: 20px;
+}
+
+.programming-info-intro {
+    color: var(--text-color-dark);
+    margin-bottom: 40px;
+    font-size: 1.1em;
+}
+
+.radio-prog-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 40px;
+    border-bottom: 2px solid var(--secondary-bg-color);
+}
+
+.prog-tab-button {
+    padding: 10px 25px;
+    background-color: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-color-dark);
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    transform: translateY(2px);
+}
+
+.prog-tab-button:hover {
+    color: var(--neon-blue);
+}
+
+.prog-tab-button.active {
+    color: var(--neon-pink);
+    border-bottom-color: var(--neon-pink);
+    text-shadow: 0 0 8px var(--neon-pink);
+}
+
+.prog-tab-content { display: none; }
+.prog-tab-content.active { display: block; }
+
+.programming-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.program-card {
+    background-color: var(--secondary-bg-color);
+    padding: 25px;
+    border-radius: 10px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+    text-align: center;
+    opacity: 0;
+    animation: fade-in-up 0.6s ease-out forwards;
+}
+
+.program-card:nth-child(2) { animation-delay: 0.1s; }
+.program-card:nth-child(3) { animation-delay: 0.2s; }
+.program-card:nth-child(4) { animation-delay: 0.3s; }
+.program-card:nth-child(5) { animation-delay: 0.4s; }
+.program-card:nth-child(6) { animation-delay: 0.5s; }
+.program-card:nth-child(7) { animation-delay: 0.6s; }
+
+.program-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+}
+
+.program-card.is-live {
+    border-color: var(--neon-green);
+    box-shadow: var(--shadow-green);
+    transform: translateY(-5px);
+    position: relative;
+}
+
+.program-card.is-live::after {
+    content: 'EN VIVO';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: var(--neon-green);
+    color: var(--main-bg-color);
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.7em;
+    font-weight: bold;
+}
+
+.program-img {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 8px var(--neon-pink));
+}
+
+.program-card h3 {
+    font-size: 1.3em;
+    color: var(--neon-pink);
+    margin-bottom: 10px;
+}
+
+.program-card p {
+    font-size: 0.9em;
+    line-height: 1.5;
+    color: var(--text-color-dark);
+}
+
+.program-card--daily {
+    border-color: var(--neon-blue);
+}
+.program-card--daily h3 {
+    color: var(--neon-blue);
+}
+
+.programming-footer {
+    font-size: 0.9em;
+    color: var(--text-color-dark);
+    padding: 30px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 20px;
+}
+
+/*
+ * #SECCIÓN DE REDES SOCIALES
+ */
+.social-media-section {
+    width: 100%;
+    max-width: 1200px;
+    margin: 60px auto 0 auto;
+    padding-top: 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    animation: fade-in-up 0.8s ease-out;
+}
+
+.social-media-title {
+    font-size: 2em;
+    color: var(--neon-blue);
+    margin-bottom: 30px;
+}
+
+.social-links-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 25px;
+}
+
+.social-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 120px;
+    height: 100px;
+    background-color: var(--secondary-bg-color);
+    border-radius: 10px;
+    border: 2px solid var(--secondary-bg-color);
+    text-decoration: none;
+    color: var(--text-color-light);
+    transition: all 0.3s ease;
+}
+
+.social-link i {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    transition: color 0.3s ease;
+}
+
+.social-link span {
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.social-link:hover {
+    transform: translateY(-5px);
+    border-color: var(--neon-pink);
+    box-shadow: var(--shadow-pink);
+}
+/* 
+ * #MEDIA QUERIES (RESPONSIVO)
+ */
+@media (max-width: 768px) {
+    /* Remodelación de la programación para móviles */
+    .programming-grid {
+        grid-template-columns: 1fr; /* Una sola columna */
+    }
+
+    .program-card {
+        display: flex; /* Usamos flexbox para el layout horizontal */
+        text-align: left; /* Alineamos el texto a la izquierda */
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+    }
+
+    .program-img {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 0; /* Quitamos el margen inferior */
+    }
+
+    .radio-player-bar {
+        flex-direction: column;
+        padding: 20px;
+        max-width: 100%;
+        text-align: center;
+    }
+    .radio-bar-info {
+        order: 1;
+        width: 100%; /* Ocupa todo el ancho para centrar texto */
+    }
+
+    .radio-bar-logo {
+        order: 2;
+        width: 100px;
+    }
+
+    .radio-bar-controls {
+        order: 3; /* Play y volumen al final */
+        width: 100%;
+        justify-content: space-around; /* Centra los controles */
+        margin-top: 15px;
+    }
+
+    .volume-control {
+        flex-grow: 0; /* No dejamos que crezca */
+    }
+
+    /* Mostramos el slider cuando el contenedor tiene la clase 'show-slider' */
+    .volume-control.show-slider #volume-slider {
+        display: block;
+        position: absolute;
+        bottom: 50px; /* Lo posiciona sobre el botón de volumen */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 150px; /* Un ancho razonable para móvil */
+        background: var(--main-bg-color);
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid var(--neon-blue);
+        box-shadow: var(--shadow-blue);
+    }
+}
+
+@media (max-width: 480px) {
+    .radio-page-title {
+        font-size: 2em;
+        margin-bottom: 30px;
+    }
+
+    .prog-tab-button {
+        padding: 8px 15px;
+        font-size: 1em;
+    }
+}
+
+/*
+ * #SECCIÓN DE CHAT
+ */
+.chat-section {
+    width: 100%;
+    max-width: 900px;
+    margin: 60px auto;
+    padding-top: 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    animation: fade-in-up 0.8s ease-out;
+}
+
+.chat-container {
+    background-color: var(--secondary-bg-color);
+    border-radius: 10px;
+    border: 2px solid var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 500px; /* Altura mínima para el contenedor */
+    transition: min-height 0.3s ease-out; /* Animación suave al cambiar de tamaño */
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 0 10px;
+}
+
+.chat-messages {
+    flex-grow: 1;
+    overflow-y: auto; /* Scroll siempre disponible si se necesita */
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid var(--main-bg-color);
+    border-radius: 8px;
+    background-color: var(--main-bg-color);
+    text-align: left;
+}
+
+.chat-message {
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    max-width: 80%;
+    word-wrap: break-word;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+.chat-message.new-message-animation {
+    animation: new-message-pop-in 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+@keyframes new-message-pop-in {
+    from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; }
+}
+
+.chat-message.user {
+    background-color: rgba(0, 255, 255, 0.1);
+    border-left: 3px solid var(--neon-blue);
+}
+
+.chat-message.system {
+    background-color: rgba(255, 0, 255, 0.1);
+    color: var(--text-color-dark);
+    font-style: italic;
+    font-size: 0.9em;
+    max-width: 100%;
+}
+
+.chat-message p {
+    margin: 0;
+}
+.chat-message .chat-gif {
+    max-width: 100%;
+    border-radius: 8px;
+    margin-top: 5px;
+}
+
+.chat-gif {
+    max-width: 250px; /* Limita el ancho del GIF en el chat */
+    height: auto;
+    cursor: pointer;
+}
+
+.chat-message strong {
+    color: var(--neon-pink);
+}
+
+.chat-mention {
+    background-color: rgba(255, 0, 255, 0.2);
+    color: var(--neon-pink);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-weight: bold;
+    border: 1px solid rgba(255, 0, 255, 0.4);
+    box-shadow: 0 0 5px rgba(255, 0, 255, 0.3);
+}
+
+.chat-input-area {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    position: relative; /* Para el panel de emojis */
+}
+
+.chat-input {
+    background-color: var(--main-bg-color);
+    border: 1px solid var(--neon-pink);
+    color: var(--text-color-light);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.chat-input:focus {
+    border-color: var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+}
+
+#chat-username { flex-basis: 150px; flex-shrink: 0; }
+#chat-message-input { flex-grow: 1; }
+#username-color-input { width: 40px; padding: 2px; border-radius: 5px; background-color: var(--main-bg-color); border: 1px solid var(--neon-pink); }
+
+.chat-control-button {
+    flex-shrink: 0; /* Evita que el botón se encoja */
+    background-color: var(--main-bg-color);
+    border: 1px solid var(--neon-blue);
+    color: var(--neon-blue);
+    padding: 0 15px;
+    border-radius: 8px;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.chat-control-button:hover {
+    background-color: rgba(0, 255, 255, 0.1);
+    color: var(--neon-pink);
+    border-color: var(--neon-pink);
+    box-shadow: var(--shadow-pink);
+}
+
+.send-button {
+    background-color: var(--neon-pink);
+    color: var(--main-bg-color);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-pink);
+}
+.send-button:hover { background-color: var(--neon-blue); box-shadow: var(--shadow-blue); }
+
+.gif-list img {
+    transform: scale(1.05);
+}
+
+.user-count {
+    color: var(--text-color-dark);
+    font-size: 0.9em;
+}
+
+.user-count .fa-circle {
+    color: var(--neon-green);
+    font-size: 0.7em;
+    margin-right: 5px;
+    animation: neon-flicker 2s infinite;
+}
+
+.delete-msg-btn {
+    position: absolute;
+    top: 2px;
+    right: 5px;
+    background: rgba(22, 27, 34, 0.8);
+    border: none;
+    color: #888;
+    cursor: pointer;
+    font-size: 0.8em;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 2; /* Asegura que esté por encima del contenido del mensaje */
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding-bottom: 2px;
+}
+
+.chat-message:hover .delete-msg-btn {
+    opacity: 1;
+}
+
+.delete-msg-btn:hover {
+    color: var(--neon-pink);
+    background-color: rgba(255, 0, 255, 0.1);
+    box-shadow: 0 0 5px var(--neon-pink);
+}
+
+/* Contenedor para el input y el panel de emojis/gifs */
+.chat-input-wrapper {
+    position: relative; /* Contenedor de posicionamiento para el panel */
+}
+
+/* --- Panel de Emojis --- */
+.picker-container {
+    position: absolute;
+    top: calc(100% + 10px); /* Debajo del área de input, con 10px de espacio */
+    right: 0;
+    width: 360px; /* Un poco más de ancho para que quepan bien los emojis */
+    max-width: 100%;
+    z-index: 10;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    background-color: var(--secondary-bg-color);
+    border-radius: var(--border-radius-base);
+    animation: neon-border-pulse-rgb 5s infinite; /* Animación RGB en el borde */
+    padding: 10px;
+}
+
+.picker-container.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.picker-container.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.picker-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--main-bg-color);
+    margin-bottom: 10px;
+}
+
+.picker-tab-btn {
+    flex: 1;
+    padding: 8px 15px;
+    background-color: transparent;
+    border: none;
+    color: var(--text-color-dark);
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.picker-tab-btn:hover {
+    color: var(--neon-blue);
+}
+
+.picker-tab-btn.active {
+    color: var(--neon-pink);
+    border-bottom-color: var(--neon-pink);
+    text-shadow: 0 0 5px var(--neon-pink);
+}
+
+.picker-tab-content {
+    display: none;
+}
+
+.picker-tab-content.active {
+    display: block;
+}
+
+emoji-picker {
+    --background: var(--secondary-bg-color);
+    --border-color: var(--neon-blue);
+    width: 100%;
+    height: 320px; /* Altura fija para el selector */
+    --indicator-color: var(--neon-pink); /* Color del indicador de categoría */
+    --skin-tone-indicator-background-color: var(--main-bg-color);
+    --search-background: var(--main-bg-color);
+    --search-border-color: var(--neon-blue);
+}
+
+/* Estilos para la sección de GIFs */
+#gif-search-input {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.gif-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    align-content: start;
+    gap: 8px;
+    height: 280px;
+    overflow-y: auto;
+}
+
+.gif-list img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gif-list img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px var(--neon-blue);
+}
+
+.gif-placeholder {
+    color: var(--text-color-dark);
+    text-align: center;
+    padding: 20px;
+    grid-column: 1 / -1; /* Ocupa todas las columnas */
+}
+
+/* Anulación específica para la lista de memes para que use flexbox en lugar de grid */
+#meme-list, .picker-tab-content#memes {
+    display: flex;
+    flex-direction: column;
+    height: 280px; /* Altura consistente con los otros paneles */
+    overflow-y: auto; /* Permitir scroll */
+    gap: 8px;
+}
+
+/* Adaptaciones del chat para móvil */
+@media (max-width: 768px) {
+    .chat-input-area {
+        flex-wrap: wrap; /* Permite que los elementos se envuelvan */
+    }
+
+    /* El input de usuario ocupa toda la primera línea */
+    #chat-username {
+        width: 100%;
+        flex-grow: 1;
+        flex-basis: 100%;
+        margin-bottom: 5px; /* Pequeño espacio antes de la línea del mensaje */
+    }
+
+    /* El input de mensaje ocupa el espacio sobrante en la segunda línea */
+    #chat-message-input {
+        flex-grow: 1;
+    }
+    
+    /* El input de color se pone al lado del de usuario */
+    .chat-input-area > #chat-username {
+        width: calc(100% - 50px); /* Dejamos espacio para el color picker */
+    }
+
+    /* Los botones de control (emoji) y enviar no crecen, mantienen su tamaño */
+    .chat-control-button, .send-button {
+        height: 42px; /* Altura consistente */
+        flex-grow: 0;
+        flex-shrink: 0;
+    }
+
+    /* El panel de emojis ocupa todo el ancho en móvil */
+    .picker-container {
+        width: 100%;
+        left: 0;
+        right: 0;
+    }
+}
+
+/* --- Estilos para Roles y Nombres de Usuario --- */
+.username-text {
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.user-role-badge {
+    font-size: 0.75em;
+    margin-left: 8px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: normal;
+    vertical-align: middle;
+}
+
+/* Estilo para los nuevos iconos de rol en formato de imagen */
+.role-icon {
+    width: 1em; /* Ajusta el tamaño del icono al tamaño de la fuente */
+    height: 1em;
+    margin-right: 4px; /* Espacio entre el icono y el texto del rol */
+    vertical-align: middle; /* Alinea el icono con el texto */
+}
+
+/* Efecto RGB para Netherite */
+@keyframes text-rgb-animation {
+    0% { color: #ff8a8a; text-shadow: 0 0 5px #ff8a8a; }
+    25% { color: #8a8aff; text-shadow: 0 0 5px #8a8aff; }
+    50% { color: #8aff8a; text-shadow: 0 0 5px #8aff8a; }
+    75% { color: #ffff8a; text-shadow: 0 0 5px #ffff8a; }
+    100% { color: #ff8a8a; text-shadow: 0 0 5px #ff8a8a; }
+}
+.role-pico-de-netherite {
+    animation: text-rgb-animation 3s linear infinite;
+}
+
+/* Efecto Neón para Diamante */
+.role-pico-de-diamante {
+    color: #00ffff;
+    text-shadow: 0 0 4px #00ffff, 0 0 8px #00ffff;
+}
+
+/* Efecto Brillo para Oro */
+.role-pico-de-oro {
+    color: #ffd700;
+    text-shadow: 0 0 5px #ffd700;
+}
+
+/* Efecto Sutil para Hierro */
+.role-pico-de-hierro {
+    color: #c0c0c0;
+    text-shadow: 0 0 3px #c0c0c0;
+}
+
+/* Colores para los badges de rol */
+.user-role-badge.role-pico-de-netherite { background-color: #4a4a4a; color: white; }
+.user-role-badge.role-pico-de-diamante { background-color: #00ffff; color: black; }
+.user-role-badge.role-pico-de-oro { background-color: #ffd700; color: black; }
+.user-role-badge.role-pico-de-hierro { background-color: #c0c0c0; color: black; }
+.user-role-badge.role-pico-de-piedra { background-color: #808080; color: white; }
+
+.meme-category {
+    margin-bottom: 15px;
+}
+
+.meme-category-title {
+    text-align: left;
+    font-size: 0.9em;
+    color: var(--neon-blue);
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--neon-blue);
+}
+
+.meme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); /* Columnas flexibles de 40px */
+    gap: 8px;
+}
+
+.meme-emoji {
+    width: 40px;
+    height: 40px;
+    object-fit: contain; /* Asegura que el emoji se vea completo sin deformarse */
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    border-radius: 5px;
+    padding: 2px;
+}
+
+.meme-emoji:hover {
+    transform: scale(1.2);
+    background-color: rgba(0, 255, 255, 0.15);
+}
+
+/* --- Estilo para el Timestamp del Chat --- */
+.chat-timestamp {
+    color: var(--text-color-dark);
+    font-size: 0.75em;
+    margin-right: 8px;
+    user-select: none; /* Para que no se pueda seleccionar con el texto */
+}

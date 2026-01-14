@@ -1,0 +1,170 @@
+/* Animaciones */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+.anim-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+.anim-slide-up { animation: slideUp 0.5s 0.2s ease-out forwards; opacity: 0; }
+.anim-pop-in { animation: popIn 0.5s 0.4s ease-out forwards; opacity: 0; }
+
+/* Layout y Barra Lateral */
+.practice-layout { display: flex; min-height: calc(100vh - 70px); }
+.sidebar { width: 250px; background-color: #1a1a1a; padding: 2rem; border-right: 2px solid var(--neon-green); transform: translateX(0); transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); z-index: 1001;}
+.sidebar.collapsed { transform: translateX(-100%); }
+.sidebar-title { font-size: 1.8rem; color: var(--neon-green); margin-bottom: 2rem; text-align: center; text-shadow: 0 0 8px var(--neon-green); }
+.exercise-list { list-style: none; padding: 0; margin: 0; }
+.exercise-item a { display: block; padding: 1rem; color: #e0e0e0; text-decoration: none; border-radius: 8px; margin-bottom: 1rem; transition: all 0.3s; font-size: 1.1rem; }
+.exercise-item a:hover { background-color: rgba(0, 255, 0, 0.1); color: #fff; transform: translateX(5px); }
+.exercise-item.active a { background-color: var(--neon-green); color: #1a1a1a; font-weight: bold; box-shadow: 0 0 10px var(--neon-green); }
+.exercise-item a i { margin-right: 10px; }
+
+.sidebar-toggle-btn { position: absolute; top: 1.5rem; left: 1.5rem; background: var(--neon-green); color: #1a1a1a; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1.2rem; z-index: 1002; box-shadow: 0 0 10px var(--neon-green); transition: all 0.3s; }
+.sidebar-toggle-btn:hover { transform: scale(1.1) rotate(90deg); }
+
+/* Área de Práctica Principal */
+.practice-area { flex-grow: 1; padding: 3rem; background: #1f1f1f; display: flex; justify-content: center; align-items: center; position: relative; }
+.exercise-content { display: none; width: 100%; max-width: 800px; text-align: center; }
+.exercise-content.active { display: block; }
+
+/* Encabezado del Ejercicio */
+.exercise-header { margin-bottom: 2rem; }
+.neon-title { font-size: 2.5rem; }
+.subtitle-text { font-size: 1.2rem; color: #aaa; }
+
+/* Controles y Estadísticas (Común) */
+.cps-controls-bar, .aim-controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem; /* Reducido para dar espacio a la hotbar */
+    background-color: rgba(0,0,0,0.3);
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 255, 0, 0.2);
+}
+
+.control-group { display: flex; align-items: center; gap: 10px; }
+.control-group label { color: var(--neon-green); font-size: 1.1rem; }
+.control-group select, .control-group input { background: #333; color: #fff; border: 1px solid var(--neon-green); border-radius: 5px; padding: 0.5rem; font-size: 1rem; }
+.control-group input { width: 60px; }
+
+.stat-display { display: flex; align-items: center; gap: 2rem; font-size: 1.5rem; font-weight: 500; flex-wrap: wrap; }
+.timer-display { color: #ff00ff; text-shadow: 0 0 8px #ff00ff; }
+.live-cps-display { color: #00ffff; text-shadow: 0 0 8px #00ffff; }
+.live-aim-display { color: #fff; }
+.stat-display i { margin-right: 8px; }
+
+/* Área de Clic (CPS) */
+.click-area-box { width: 100%; height: 350px; background-color: rgba(0, 255, 0, 0.1); border: 3px dashed var(--neon-green); border-radius: 15px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+.click-area-box:hover { background-color: rgba(0, 255, 0, 0.15); box-shadow: 0 0 25px rgba(0, 255, 0, 0.5); }
+#start-text, #block-start-text, #aim-start-text { font-size: 2.2rem; color: #fff; text-shadow: 0 0 10px #fff; transition: opacity 0.3s; cursor: pointer; }
+.click-area-box.running { cursor: crosshair; }
+.click-area-box.running #start-text { opacity: 0; }
+
+/* Animación de Clic (CPS) */
+.click-feedback { position: fixed; width: 30px; height: 30px; background: #00ff00; border-radius: 50%; transform: scale(0); animation: click-ripple 0.4s ease-out; z-index: 3000; pointer-events: none; }
+@keyframes click-ripple { to { transform: scale(5); opacity: 0; } }
+
+/* --- Modal de Resultados (Común) --- */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+.modal-overlay:not(.hidden) { opacity: 1; pointer-events: all; }
+
+.result-display-box { width: 90%; max-width: 500px; padding: 2.5rem; background: linear-gradient(145deg, #2c2c2c, #1a1a1a); border-radius: 20px; border: 2px solid var(--neon-green); box-shadow: 0 0 40px rgba(0, 255, 0, 0.5); text-align: center; transform: scale(0.95); opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease; }
+.modal-overlay:not(.hidden) .result-display-box { transform: scale(1); opacity: 1; }
+.result-display-box h3 { font-size: 2.2rem; color: var(--neon-green); margin-bottom: 1.5rem; text-shadow: 0 0 10px var(--neon-green); }
+
+/* Calificación y Mensajes */
+.cps-rating { margin-bottom: 2rem; font-size: 1.5rem; }
+.cps-rating i { font-size: 3rem; margin-bottom: 1rem; display: block; transition: color 0.3s; }
+.rating-slow i, .rating-slow span { color: #ff4d4d; }
+.rating-average i, .rating-average span { color: #ffc107; }
+.rating-fast i, .rating-fast span { color: #28a745; }
+.rating-cheetah i, .rating-cheetah span { color: #00ffff; text-shadow: 0 0 8px #00ffff; }
+
+/* Cuadrícula de estadísticas finales */
+.final-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2.5rem; }
+.final-stats-grid.aim-stats { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
+
+.final-stat { background-color: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 12px; }
+.final-stat p { margin: 0 0 0.5rem 0; font-size: 1.1rem; color: #aaa; }
+.final-stat span { font-family: 'Orbitron', sans-serif; font-size: 2.5rem; font-weight: bold; color: #fff; }
+
+#final-cps span { color: #00ffff; }
+#total-clicks span { color: #ff00ff; }
+
+.restart-button { background: var(--neon-green); color: #1a1a1a; border: none; padding: 1rem 2rem; font-size: 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: bold; text-transform: uppercase; }
+.restart-button:hover { background: #fff; box-shadow: 0 0 20px #fff; transform: scale(1.05); }
+
+.hidden { display: none !important; }
+
+/* --- Estilos del Aim Trainer --- */
+.aim-game-area {
+    width: 100%;
+    height: 500px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 2px solid var(--neon-green);
+    border-radius: 15px;
+    position: relative;
+    cursor: crosshair;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    margin-bottom: 1rem; /* Espacio para la hotbar */
+}
+
+#block-placer-area canvas { display: block; }
+
+.aim-target { position: absolute; width: 50px; height: 50px; background-color: var(--neon-green); border-radius: 50%; box-shadow: 0 0 15px var(--neon-green), inset 0 0 5px rgba(255, 255, 255, 0.5); cursor: pointer; transform: scale(0); transition: transform 0.1s ease-out; }
+.aim-target.visible { transform: scale(1); }
+#aim-rating.rating-great span { color: #00ffff; text-shadow: 0 0 8px #00ffff; }
+#aim-rating.rating-good span { color: #28a745; }
+#aim-rating.rating-ok span { color: #ffc107; }
+#aim-rating.rating-bad span { color: #ff4d4d; }
+
+
+/* --- ESTILOS DEL BLOCK PLACER Y HOTBAR --- */
+.hotbar-container {
+    position: relative;
+    width: 364px; /* 182px * 2 */
+    height: 44px; /* 22px * 2 */
+    margin: 1rem auto 0 auto;
+    user-select: none;
+}
+
+.hotbar-bg, .hotbar-selection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated; /* Mantiene el estilo de pixel art */
+}
+
+.hotbar-selection {
+    left: 0; /* Se moverá con JS */
+    transition: left 0.1s linear;
+    z-index: 2;
+}
+
+.hotbar-slots {
+    position: absolute;
+    top: 4px; /* 2px * 2 */
+    left: 4px; /* 2px * 2 */
+    z-index: 3;
+    display: flex;
+}
+
+.hotbar-slot {
+    width: 32px; /* 16px * 2 */
+    height: 32px; /* 16px * 2 */
+    margin: 0 4px; /* 2px * 2 */
+    cursor: pointer;
+    image-rendering: pixelated;
+    transform: scale(1);
+    transition: transform 0.1s ease;
+}
+
+.hotbar-slot:hover {
+    transform: scale(1.1);
+}

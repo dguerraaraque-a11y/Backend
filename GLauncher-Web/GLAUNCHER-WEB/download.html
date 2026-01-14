@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>GLauncher - Centro de Descargas</title>
+    <link rel="stylesheet" href="css/styles.css"> 
+    <link rel="icon" type="image/png" href="images/glauncher logo.png">
+    <link rel="stylesheet" href="css/download-styles.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <!-- Spinner de Carga, Notificaciones y Pantalla Offline -->
+    <div id="loader-overlay" class="loader-overlay"><div class="spinner"></div></div>
+    <div id="notification-container"></div>
+    <div id="offline-overlay" class="offline-overlay"><div class="offline-content"><i class="fas fa-wifi"></i><h2>Sin Conexión</h2><p>Revisa tu red e inténtalo de nuevo.</p></div></div>
+    
+
+    <header class="header">
+        <div class="logo-container">
+            <img src="images/glauncher logo.png" alt="Logo de GLauncher" class="logo">
+            <h1>GLauncher</h1>
+        </div>
+        <nav class="auth-buttons">
+            <a href="radio.html" class="auth-button">Radio</a> 
+            <a href="index.html" class="auth-button active">Inicio</a> 
+            <a href="noticias.html" class="auth-button">Noticias</a>
+            <a href="shop.html" class="auth-button">Tienda</a>
+            <a href="download.html" class="auth-button">Descargas</a>
+            <a href="dashboard.html" class="auth-button">Dashboard</a>
+            <a href="login.html" class="auth-button">Iniciar Sesión</a>
+            <a href="register.html" class="auth-button">Registrar</a>
+            <a href="https://www.youtube.com/@DaniCraftYT25" target="_blank" class="auth-button youtube-button" title="Visita mi canal de YouTube">
+                <i class="fab fa-youtube"></i> Canal
+            </a>
+        </nav>
+    </header>
+
+    <main class="main-content download-page">
+        <div class="download-container">
+            
+            <h2 class="neon-title"><i class="fas fa-download"></i> CENTRO DE DESCARGAS - GLAUNCHER</h2>
+            <p class="subtitle-text">Selecciona tu sistema operativo para obtener la versión más estable y rápida.</p>
+
+            <div class="download-info-box">
+                <h3 class="box-title text-neon-green">VERSIÓN MÁS RECIENTE: V1.1</h3>
+                <p class="box-description">Esta versión incluye cambios en la GUI de Inicio, GMusic, Ajustes y Mi Cuenta. Tambien Fueron solucionado los errores que impedian la descarga de mods y de las versiones de los modloades.</p>
+
+                <div class="download-tabs">
+                    <nav class="tab-nav">
+                        <button class="tab-button active" data-tab="desktop"><i class="fas fa-desktop"></i> Escritorio</button>
+                        <button class="tab-button" data-tab="mobile"><i class="fas fa-mobile-alt"></i> Móvil</button>
+                    </nav>
+
+                    <!-- Pestaña de Escritorio -->
+                    <div id="desktop" class="tab-content active">
+                        <div class="download-grid">
+                            <div class="download-card platform-windows">
+                                <i class="fab fa-windows card-icon"></i>
+                                <h4>Windows</h4>
+                                <p class="card-description">Instalador recomendado para Windows 7 8 8.1 10 y 11.</p>
+                                <div class="button-group">
+                                    <a href="downloads/GLauncher-1.1.exe" class="download-button" aria-label="Descargar para Windows 64-bit"><i class="fas fa-download"></i> 64-bit</a>
+                                    <a href="downloads/GLauncher-1.1.exe" class="download-button" aria-label="Descargar para Windows 32-bit"><i class="fas fa-download"></i> 32-bit</a>
+                                </div>
+                            </div>
+                            <div class="download-card platform-macos">
+                                <i class="fas fa-laptop-code card-icon"></i>
+                                <h4>macOS</h4>
+                                <p class="card-description">Versión nativa para Apple Silicon y Intel.</p>
+                                <a href="downloads/GLauncher-1.0.0.exe" class="download-button" aria-label="Descargar para MacOS"><i class="fas fa-download"></i></a>
+                            </div>
+                            <div class="download-card platform-linux">
+                                <i class="fab fa-linux card-icon"></i>
+                                <h4>Linux</h4>
+                                <p class="card-description">Paquete universal para la mayoría de distros.</p>
+                                <button class="download-button is-disabled" disabled><i class="fas fa-clock"></i> Próximamente</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña de Móvil -->
+                    <div id="mobile" class="tab-content">
+                        <div class="download-grid">
+                            <div class="download-card platform-android">
+                                <i class="fab fa-android card-icon"></i>
+                                <h4>Android</h4>
+                                <p class="card-description">Lleva GLauncher en tu dispositivo móvil.</p>
+                                <button class="download-button is-disabled" disabled><i class="fas fa-clock"></i> Próximamente</button>
+                            </div>
+                            <div class="download-card platform-ios">
+                                <i class="fab fa-apple card-icon"></i>
+                                <h4>iOS</h4>
+                                <p class="card-description">Lleva GLauncher en tu iPhone y iPad.</p>
+                                <button class="download-button is-disabled" disabled><i class="fas fa-clock"></i> Próximamente</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="requirements-box">
+                <h3 class="box-title text-neon-pink"><i class="fas fa-microchip"></i> REQUISITOS DEL SISTEMA</h3>
+                <ul class="req-list">
+                    <li><i class="fas fa-check text-neon-green"></i> <strong>SO:</strong> Windows 7/8/10/11 (64-bit) o Linux/macOS reciente.</li>
+                    <li><i class="fas fa-check text-neon-green"></i> <strong>CPU:</strong> Mínimo Dual Core 1.8 GHz.</li>
+                    <li><i class="fas fa-check text-neon-green"></i> <strong>RAM:</strong> 2 GB asignados (Mínimo).</li>
+                    <li><i class="fas fa-check text-neon-green"></i> <strong>Java:</strong> Java 8 o superior.</li>
+                </ul>
+            </div>
+            
+            <p class="disclaimer-text">
+                <i class="fas fa-shield-alt text-neon-pink"></i> El GLauncher es 100% seguro y libre de virus. Proyecto desarrollado por <a href="https://www.youtube.com/@DaniCraftYT25" target="_blank" class="neon-hover-text">DaniCraftYT25</a>.
+            </p>
+
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>GLauncher &copy; 2025. Todos los derechos reservados.</p>
+        <p>Desarrollador Principal: <a href="https://www.youtube.com/@DaniCraftYT25" target="_blank" class="neon-hover-text">DaniCraftYT25</a></p>
+    </footer>
+    
+    <!-- Elementos de audio para los efectos de sonido -->
+    <audio id="tab-switch-sound" src="sounds/click_sound.mp3" preload="auto"></audio>
+    <audio id="card-hover-sound" src="sounds/ui-tick-2.mp3" preload="auto"></audio>
+
+    <!-- Barra de Navegación Inferior (Solo para Móviles) -->
+    <nav class="bottom-nav">
+        <a href="index.html" class="active"><i class="fas fa-home"></i><span>Inicio</span></a>
+        <a href="radio.html"><i class="fas fa-broadcast-tower"></i><span>Radio</span></a>
+        <a href="noticias.html"><i class="fas fa-newspaper"></i><span>Noticias</span></a>
+        <a href="download.html"><i class="fas fa-download"></i><span>Descargas</span></a>
+        <a href="dashboard.html"><i class="fas fa-user-circle"></i><span>Perfil</span></a>
+    </nav>
+
+    <script src="js/global-script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const downloadCards = document.querySelectorAll('.download-card');
+            const tabSound = document.getElementById('tab-switch-sound');
+            const hoverSound = document.getElementById('card-hover-sound');
+            const reqList = document.querySelector('.req-list');
+
+            // Objeto con los textos de los requisitos para cada plataforma
+            const requirementsData = {
+                desktop: [
+                    '<strong>SO:</strong> Windows 7/8/10/11 (64-bit) o Linux/macOS reciente.',
+                    '<strong>CPU:</strong> Mínimo Dual Core 1.8 GHz.',
+                    '<strong>RAM:</strong> 2 GB asignados (Mínimo).',
+                    '<strong>Java:</strong> Java 8 o superior.'
+                ],
+                mobile: [
+                    '<strong>SO:</strong> Android 8.0 (Oreo) o superior / iOS 14 o superior.',
+                    '<strong>RAM:</strong> 3 GB de RAM (Recomendado).',
+                    '<strong>Almacenamiento:</strong> 500 MB de espacio libre.',
+                    '<strong>Conexión:</strong> Conexión a internet estable para funciones en línea.'
+                ]
+            };
+
+            // Función para actualizar la lista de requisitos con animación
+            function updateRequirements(platform) {
+                const requirements = requirementsData[platform];
+                reqList.innerHTML = ''; // Limpiar la lista actual
+                requirements.forEach((reqText, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<i class="fas fa-check text-neon-green"></i> ${reqText}`;
+                    li.style.animationDelay = `${index * 0.1}s`; // Re-aplicar el retraso de la animación
+                    reqList.appendChild(li);
+                });
+            }
+
+            // Configurar volumen bajo para los sonidos de UI
+            tabSound.volume = 0.3;
+            hoverSound.volume = 0.2;
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Reproducir sonido de cambio de pestaña
+                    tabSound.currentTime = 0;
+                    tabSound.play();
+
+                    const currentActiveContent = document.querySelector('.tab-content.active');
+                    const tabId = button.dataset.tab;
+                    const nextActiveContent = document.getElementById(tabId);
+
+                    if (currentActiveContent === nextActiveContent) return; // No hacer nada si se hace clic en la pestaña activa
+
+                    // Quitar clase 'active' de todos los botones y contenidos
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+
+                    // Añadir clase 'active' al botón presionado
+                    button.classList.add('active');
+
+                    // Actualizar la lista de requisitos según la pestaña seleccionada
+                    updateRequirements(tabId);
+
+                    // Iniciar transición de salida en el contenido actual
+                    if (currentActiveContent) {
+                        currentActiveContent.classList.add('is-exiting');
+                        currentActiveContent.classList.remove('active');
+                    }
+
+                    // Mostrar el nuevo contenido después de la animación de salida
+                    setTimeout(() => {
+                        if (currentActiveContent) currentActiveContent.classList.remove('is-exiting');
+                        nextActiveContent.classList.add('active');
+                    }, 150); // Debe coincidir con la duración de la transición de opacidad
+                });
+            });
+
+            // Añadir sonido de hover a las tarjetas
+            downloadCards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    hoverSound.currentTime = 0;
+                    hoverSound.play();
+                });
+            });
+
+            // Cargar los requisitos iniciales para escritorio
+            updateRequirements('desktop');
+        });
+    </script>
+</body>
+</html>

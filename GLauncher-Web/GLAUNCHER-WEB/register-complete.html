@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Completar Registro - GLauncher</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/login-styles.css"> <!-- Reutilizamos estilos de login -->
+    <link rel="stylesheet" href="css/register-complete.css"> <!-- Estilos específicos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/glauncher logo.png">
+</head>
+<body>
+    <header class="header">
+        <div class="logo-container">
+            <img src="images/glauncher logo.png" alt="Logo de GLauncher" class="logo">
+            <h1>GLauncher</h1>
+        </div>
+        <nav class="auth-buttons">
+            <a href="index.html" class="auth-button"><i class="fas fa-home"></i> Volver al Inicio</a>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="auth-container">
+            <h2 style="color: var(--neon-green);"><i class="fas fa-user-check"></i> ¡Un último paso!</h2>
+            <p class="auth-subtitle">Personaliza tu perfil para unirte a la comunidad de GLauncher.</p>
+
+            <!-- Barra de Progreso -->
+            <div class="progress-bar">
+                <div class="progress-step active" data-step="1">Perfil</div>
+                <div class="progress-step" data-step="2">Términos</div>
+                <div class="progress-step" data-step="3">Seguridad</div>
+            </div>
+
+            <form id="complete-registration-form">
+                <!-- Paso 1: Perfil -->
+                <div class="form-step active" id="step-1">
+                    <div class="profile-picture-uploader">
+                        <label for="profile-picture-input">
+                            <img id="profile-preview" src="images/avatars/default-avatar.png" alt="Vista previa del avatar">
+                            <div class="upload-overlay"><i class="fas fa-camera"></i></div>
+                        </label>
+                        <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="username" name="username" class="neon-input-field" placeholder=" " required>
+                        <label for="username"><i class="fas fa-user"></i> Elige tu nombre de usuario</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="password" name="password" class="neon-input-field" placeholder=" " required>
+                        <label for="password"><i class="fas fa-key"></i> Crea una contraseña</label>
+                    </div>
+                    <button type="button" class="auth-button-action next-step-btn">Siguiente <i class="fas fa-arrow-right"></i></button>
+                </div>
+
+                <!-- Paso 2: Términos y Condiciones -->
+                <div class="form-step" id="step-2">
+                    <h3 class="step-title">Términos y Condiciones</h3>
+                    <div class="terms-box">
+                        <!-- Aquí se podrían cargar los términos dinámicamente -->
+                        <p>Al usar GLauncher, aceptas no usar trampas, respetar a otros usuarios y no distribuir contenido ilegal. Nos reservamos el derecho de suspender cuentas que violen estas normas. Las compras de GCoins y cosméticos son finales y no reembolsables...</p>
+                        <p>Este es un resumen. Lee los <a href="terms-and-conditions.html" target="_blank">términos completos aquí</a>.</p>
+                    </div>
+                    <div class="terms-group">
+                        <label for="terms-checkbox">
+                            <input type="checkbox" id="terms-checkbox" name="terms" required>
+                            He leído y acepto los Términos y Condiciones.
+                        </label>
+                    </div>
+                    <div class="step-navigation">
+                        <button type="button" class="auth-button-action prev-step-btn"><i class="fas fa-arrow-left"></i> Anterior</button>
+                        <button type="button" class="auth-button-action next-step-btn">Siguiente <i class="fas fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- Paso 3: Seguridad Adicional -->
+                <div class="form-step" id="step-3">
+                    <h3 class="step-title">Seguridad Adicional (Opcional)</h3>
+                    <div class="form-group">
+                        <input type="tel" id="phone-number" name="phone_number" class="neon-input-field" placeholder=" ">
+                        <label for="phone-number"><i class="fas fa-mobile-alt"></i> Número de Teléfono</label>
+                        <small class="form-hint">Útil para futuras opciones de recuperación de cuenta.</small>
+                    </div>
+                    <div class="step-navigation">
+                        <button type="button" class="auth-button-action prev-step-btn"><i class="fas fa-arrow-left"></i> Anterior</button>
+                        <button type="submit" class="auth-button-action" style="background-color: var(--neon-green); box-shadow: var(--shadow-green);">
+                            <i class="fas fa-rocket"></i> Finalizar Registro
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>GLauncher &copy; 2025. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="js/register-complete.js"></script>
+</body>
+</html>

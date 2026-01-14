@@ -1,0 +1,261 @@
+/* Estilos para la página de la Tienda */
+
+.shop-page {
+    padding: 40px 20px;
+}
+
+.shop-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.neon-title {
+    font-size: 2.8em;
+    color: var(--neon-pink);
+    text-shadow: var(--shadow-pink);
+    margin-bottom: 10px;
+}
+
+.subtitle-text {
+    font-size: 1.2em;
+    color: var(--text-color-dark);
+}
+
+.gcoin-balance {
+    margin-top: 20px;
+    font-size: 1.5em;
+    color: var(--text-color-light);
+}
+
+.gcoin-balance #gcoin-amount {
+    font-weight: bold;
+    color: var(--neon-green);
+    text-shadow: var(--shadow-green);
+}
+
+.gcoin-balance .fa-coins {
+    color: #ffd700; /* Color dorado */
+    margin-left: 5px;
+}
+
+/* Estilos para las secciones */
+.gcoin-purchase-section, .cosmetics-section {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: var(--secondary-bg-color);
+    border-radius: var(--border-radius-base);
+    border: 1px solid var(--neon-blue-transparent);
+}
+
+.section-title {
+    text-align: center;
+    font-size: 2em;
+    color: var(--neon-blue);
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.section-title span {
+    background-color: var(--secondary-bg-color);
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.section-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--neon-blue), transparent);
+    z-index: 0;
+}
+
+/* Grid de paquetes de GCoins */
+.gcoin-packages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+}
+
+.gcoin-package {
+    background-color: var(--secondary-bg-color);
+    padding: 25px;
+    border-radius: var(--border-radius-base);
+    text-align: center;
+    border: 2px solid var(--main-bg-color);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+}
+
+.gcoin-package:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.gcoin-package h4 {
+    font-size: 1.3em;
+    color: var(--neon-blue);
+    margin-bottom: 10px;
+}
+
+.gcoin-package.popular {
+    border-color: var(--neon-green);
+    box-shadow: var(--shadow-green);
+    animation: neon-pulse-rgb 4s infinite alternate;
+}
+
+.gcoin-package.popular .buy-btn {
+    background-color: var(--neon-pink);
+    box-shadow: var(--shadow-pink);
+}
+
+.gcoin-package:first-child .buy-btn {
+    background-color: var(--neon-blue);
+    box-shadow: var(--shadow-blue);
+}
+
+.gcoin-package:last-child .buy-btn {
+    background-color: #9400D3; /* Violeta oscuro para premium */
+    box-shadow: 0 0 15px #9400D3;
+}
+
+.gcoin-package:hover .buy-btn {
+    transform: scale(1.05);
+}
+
+.buy-btn {
+    padding: 12px 28px; /* Botones más grandes */
+    font-size: 1.1em; /* Texto más grande */
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #fff; /* Texto blanco para mejor contraste */
+}
+
+.buy-btn .fa-shopping-cart {
+    margin-right: 8px;
+}
+
+
+.gcoin-package.popular:hover {
+    box-shadow: 0 10px 25px rgba(255, 0, 255, 0.5);
+}
+
+/* Sección de Recompensa Diaria */
+.daily-reward-section {
+    background-color: rgba(57, 255, 20, 0.1);
+    border: 1px solid var(--neon-green);
+    border-radius: var(--border-radius-base);
+    padding: 20px;
+    text-align: center;
+    margin: 0 auto 40px auto;
+    max-width: 600px;
+    box-shadow: var(--shadow-green);
+}
+
+
+/*
+ * #SECCIÓN DE COSMÉTICOS
+ */
+.popular-badge {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--neon-green);
+    color: var(--main-bg-color);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.gcoin-value {
+    font-size: 2em;
+    font-weight: bold;
+    color: var(--neon-green);
+    margin: 10px 0;
+}
+
+.gcoin-price {
+    font-size: 1.5em;
+    color: var(--text-color-light);
+    margin-bottom: 20px;
+}
+
+/* Grid de cosméticos */
+.cosmetics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+.cosmetic-item {
+    background-color: var(--main-bg-color);
+    border-radius: var(--border-radius-base);
+    overflow: hidden;
+    border: 1px solid var(--neon-blue-transparent);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.cosmetic-item:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-blue);
+}
+
+.item-preview {
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+.item-rarity {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 4px 10px;
+    font-size: 0.8em;
+    font-weight: bold;
+    border-radius: 5px;
+    color: #fff;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+}
+
+.item-rarity.legendary { background-color: #ff8000; } /* Naranja */
+.item-rarity.epic { background-color: #a335ee; } /* Morado */
+.item-rarity.rare { background-color: #0070dd; } /* Azul */
+.item-rarity.common { background-color: #6c757d; } /* Gris */
+
+.item-info {
+    padding: 20px;
+    text-align: center;
+}
+
+/* ... (el resto de los estilos para los cosméticos se añadirían aquí) */
+.item-name {
+    font-size: 1.4em;
+    color: var(--neon-blue);
+    margin-bottom: 8px;
+}
+
+.item-description {
+    font-size: 0.95em;
+    color: var(--text-color-dark);
+    min-height: 40px;
+    margin-bottom: 15px;
+}
+
+.item-price {
+    font-size: 1.6em;
+    font-weight: bold;
+    color: var(--neon-green);
+    margin-bottom: 20px;
+}
