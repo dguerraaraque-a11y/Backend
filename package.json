@@ -30,5 +30,11 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "glauncher_frontend/*",
+      "node_modules/*"
+    ]
   }
 }

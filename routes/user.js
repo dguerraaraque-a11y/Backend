@@ -4,11 +4,12 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { verifyToken, adminRequired } = require('../auth/middleware');
-const User = require('../models/User');
-const Friendship = require('../models/Friendship');
-const { update_user_role } = require('../utils/helpers');
-const { pusher } = require('../server'); // Import pusher instance
+const { Op } = require('sequelize');
+const { verifyToken, adminRequired } = require('../glauncher_backend/auth/middleware');
+const User = require('../glauncher_backend/models/User');
+const Friendship = require('../glauncher_backend/models/Friendship');
+const { update_user_role } = require('../glauncher_backend/utils/helpers');
+const { pusher } = require('../glauncher_backend/server'); // Import pusher instance
 
 const router = express.Router();
 
@@ -54,6 +55,32 @@ router.get('/api/user_info', verifyToken, async (req, res) => {
         res.status(500).json({ error: 'Error interno del servidor.' });
     }
 });
+
+// Search for users
+router.get('/api/users/search', verifyToken, async (req, res) => {
+    try {
+        const { username } = req.query;
+
+        if (!username) {
+            return res.status(400).json({ message: 'El parámetro de búsqueda "username" es requerido.' });
+        }
+
+        const users = await User.findAll({
+            where: {
+                username: {
+                    [Op.like]: `%${username}%`
+                }
+            },
+            attributes: ['id', 'username']
+        });
+
+        res.json(users);
+    } catch (error) {
+        console.error('Error searching users:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+});
+
 
 // Update user profile
 router.post('/api/user/update_profile', verifyToken, uploadAvatar.single('avatar_file'), async (req, res) => {
