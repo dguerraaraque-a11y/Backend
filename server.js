@@ -40,7 +40,6 @@ console.log("? Cargando rutas de la API...");
 app.use(require('./routes/auth')); 
 app.use('/api', require('./routes/user'));
 app.use('/api', require('./routes/friendship'));
-app.use('/api', require('./routes/news'));
 app.use('/api', require('./routes/downloads'));
 app.use('/api', require('./routes/shop'));
 app.use('/api', require('./routes/achievements'));
@@ -49,6 +48,7 @@ app.use('/api', require('./routes/gchat'));
 app.use('/api', require('./routes/chat'));
 app.use('/api', require('./routes/pusher-auth'));
 app.use('/api', require('./routes/communityWall'));
+app.use('/api/news', require('./routes/news')); // Corrected route
 console.log("? Rutas cargadas exitosamente.");
 
 // [MODIFICACIÓN] Servir la suite de pruebas 'test_suite.html' en la ruta raíz.

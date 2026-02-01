@@ -5,7 +5,7 @@ const News = require('../models/News');
 const router = express.Router();
 
 // Get all news items
-router.get('/news', publicEndpoint, async (req, res) => {
+router.get('/', publicEndpoint, async (req, res) => { // CORREGIDO: de '/news' a '/'
     try {
         const newsItems = await News.findAll({ order: [['id', 'DESC']] });
 
