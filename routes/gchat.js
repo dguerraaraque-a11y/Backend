@@ -7,7 +7,7 @@ const mime = require('mime-types');
 const { verifyToken } = require('../auth/middleware');
 const PrivateMessage = require('../models/PrivateMessage');
 const User = require('../models/User');
-const { pusher } = require('../server'); // Import pusher instance
+const pusher = require('../config/pusher'); // Importa la instancia de Pusher compartida
 
 const router = express.Router();
 

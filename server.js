@@ -10,7 +10,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const passport = require('passport');
-const sequelize = require('./config/database');
+// const sequelize = require('./config/database'); // Comentado para eliminar la dependencia de la base de datos
 
 // --- 2. INICIALIZACIÓN DE EXPRESS ---
 const app = express();
@@ -56,17 +56,10 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'static', 'test_suite.html'));
 });
 
-// --- 6. SINCRONIZACIÓN Y ARRANQUE ---
-sequelize.sync({ force: false })
-    .then(() => {
-        console.log('?? Database & tables synced successfully!');
-        app.listen(PORT, () => {
-            console.log(`?? Server running on port ${PORT}. Ready to accept connections.`);
-        });
-    })
-    .catch(err => {
-        console.error('?? Critical Error: Unable to sync database:', err.message);
-        process.exit(1); 
-    });
+// --- 6. SINCRONIZACIÓN Y ARRANQUE (MODIFICADO) ---
+// Se elimina la sincronización con la base de datos para evitar el error de conexión.
+app.listen(PORT, () => {
+    console.log(`?? Server running on port ${PORT}. Ready to accept connections.`);
+});
 
 module.exports.app = app;

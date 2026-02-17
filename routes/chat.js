@@ -1,21 +1,11 @@
 const express = require('express');
-// AQUÍ ESTABA EL ERROR: Faltaba importar adminRequired correctamente
 const { adminRequired, publicEndpoint } = require('../auth/middleware');
 const { Op } = require('sequelize');
 const ChatMessage = require('../models/ChatMessage');
 const User = require('../models/User');
 const { update_user_role } = require('../utils/helpers');
 const jwt = require('jsonwebtoken');
-const Pusher = require('pusher');
-
-// Inicializamos Pusher AQUÍ para evitar el error de dependencia circular
-const pusher = new Pusher({
-    appId: process.env.PUSHER_APP_ID,
-    key: process.env.PUSHER_KEY,
-    secret: process.env.PUSHER_SECRET,
-    cluster: process.env.PUSHER_CLUSTER,
-    useTLS: true,
-});
+const pusher = require('../config/pusher'); // Importa la instancia de Pusher compartida
 
 const router = express.Router();
 

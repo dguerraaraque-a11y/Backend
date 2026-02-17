@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { pusher } = require('../server'); // Import pusher instance
+const pusher = require('../config/pusher'); // Importa la instancia de Pusher desde el archivo de configuración dedicado
 
 const router = express.Router();
 
