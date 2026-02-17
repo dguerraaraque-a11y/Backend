@@ -23,7 +23,11 @@ const mockData = {
     friendships: [{ userId1: 1, userId2: 2, status: 'accepted' }],
     gchatHistory: { '1-3': [{ senderId: 1, recipient_id: 3, message: 'Hey!' }] },
     shopItems: [{ id: 1, name: 'Gold Sword', price: 500 }],
-    userProfiles: { 1: { bio: 'Gamer', status: 'Online' }, 2: { bio: 'Admin', status: 'Away' } }
+    userProfiles: { 1: { bio: 'Gamer', status: 'Online' }, 2: { bio: 'Admin', status: 'Away' } },
+    news: [
+        { id: 1, title: 'Welcome to GLauncher', content: 'We are live!', date: '2023-10-27' },
+        { id: 2, title: 'Patch Notes v1.1', content: 'Bug fixes and performance improvements.', date: '2023-11-01' }
+    ]
 };
 
 /**
@@ -79,6 +83,7 @@ const publicEndpoint = (req, res, next) => {
 
 // Ruta de bienvenida (news.js)
 app.get('/', (req, res) => res.json({ message: 'Welcome to GLauncher API' }));
+app.get('/api/news', (req, res) => res.json(mockData.news));
 
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
