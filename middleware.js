@@ -117,13 +117,115 @@ app.get('/create_first_admin', (req, res) => {
     res.json({ message: 'Endpoint for initial admin setup.' });
 });
 
+// --- HTML Generator for Neon Loading ---
+const getNeonLoaderHtml = (provider, targetUrl) => `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conectando con ${provider}...</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #050505;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+        .loader-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .loader {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, transparent, transparent 40%, #00ff0a);
+            animation: animate 2s linear infinite;
+        }
+        .loader::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            background: #050505;
+            border-radius: 50%;
+            z-index: 1000;
+        }
+        .loader::after {
+            content: '';
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            right: 0px;
+            bottom: 0px;
+            background: linear-gradient(45deg, transparent, transparent 40%, #00ff0a);
+            border-radius: 50%;
+            z-index: 1;
+            filter: blur(30px);
+        }
+        @keyframes animate {
+            0% { transform: rotate(0deg); filter: hue-rotate(0deg); }
+            100% { transform: rotate(360deg); filter: hue-rotate(360deg); }
+        }
+        h2 {
+            color: #fff;
+            margin-top: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 1.2rem;
+            z-index: 1001;
+            text-shadow: 0 0 10px #00ff0a;
+        }
+    </style>
+</head>
+<body>
+    <div class="loader-container">
+        <div class="loader"></div>
+        <h2>Redirigiendo a ${provider}</h2>
+    </div>
+    <script>
+        // Simula el tiempo de espera antes de redirigir al callback
+        setTimeout(() => {
+            window.location.href = '${targetUrl}';
+        }, 2500);
+    </script>
+</body>
+</html>
+`;
+
 // --- auth.js ---
-app.get('/login/google', (req, res) => res.send('Redirecting to Google for authentication...'));
+app.get('/login/google', (req, res) => {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const redirectUri = `${protocol}://${host}/auth/google/callback`;
+    const clientId = '71330665801-6joq0752g7hhhp2hmld06hrfg67rhji0.apps.googleusercontent.com';
+    const googleUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=profile%20email`;
+    res.send(getNeonLoaderHtml('Google', googleUrl));
+});
+app.get('/login/microsoft', (req, res) => res.send(getNeonLoaderHtml('Microsoft', '/auth/microsoft/callback')));
+
 app.get('/auth/google/callback', (req, res) => {
     const user = users[0]; // Simula un usuario que regresa de Google
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
     res.json({ message: 'Google auth successful (mock)', token });
 });
+app.get('/auth/microsoft/callback', (req, res) => {
+    const user = users[0]; // Reutilizamos el usuario mock
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+    res.json({ message: 'Microsoft auth successful (mock)', token });
+});
+
 app.get('/api/user/me', loginRequired, (req, res) => res.json(req.user));
 
 // --- chat.js ---
