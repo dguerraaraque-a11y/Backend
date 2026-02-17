@@ -1,49 +1,59 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const verifyToken = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'No autenticado. Token no proporcionado.' });
+/**
+ * Middleware to verify if the user is authenticated via JWT.
+ */
+const loginRequired = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+        return res.status(401).json({ error: 'Acceso denegado. Token no proporcionado.' });
     }
 
-    const token = authHeader.split(' ')[1];
-
-    try {
-        const decoded = jwt.verify(token, process.env.SECRET_KEY);
-        req.userId = decoded.user_id;
-        req.username = decoded.username;
-        next();
-    } catch (error) {
-        if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({ message: 'Token expirado.' });
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Token inválido o expirado.' });
         }
-        return res.status(401).json({ message: 'Token inválido.' });
-    }
+        req.user = user;
+        next();
+    });
 };
 
+/**
+ * Middleware to verify if the user has admin privileges.
+ */
 const adminRequired = async (req, res, next) => {
-    // Ensure verifyToken has run first to populate req.userId
-    if (!req.userId) {
-        return res.status(401).json({ message: 'Acceso denegado. No autenticado.' });
+    if (!req.user) {
+        return res.status(401).json({ error: 'Acceso denegado. Usuario no autenticado.' });
     }
 
-    try {
-        const user = await User.findByPk(req.userId);
-        if (!user || !user.is_admin) {
-            return res.status(403).json({ message: 'Acceso denegado. No tienes permisos de administrador.' });
-        }
-        req.user = user; // Attach user object to request for further use
-        next();
-    } catch (error) {
-        console.error('Error en middleware adminRequired:', error);
-        return res.status(500).json({ message: 'Error interno del servidor.' });
+    // Check if role is present in the token payload
+    if (req.user.role === 'admin') {
+        return next();
     }
+
+    // Fallback: Check in database (if User model is available)
+    if (User && typeof User.findByPk === 'function') {
+        try {
+            const user = await User.findByPk(req.user.id);
+            if (user && user.role === 'admin') {
+                return next();
+            }
+        } catch (error) {
+            console.error("Error checking admin permissions:", error);
+        }
+    }
+
+    return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de administrador.' });
 };
 
+/**
+ * Middleware for public endpoints (placeholder).
+ */
 const publicEndpoint = (req, res, next) => {
-    // This middleware simply allows the request to proceed
     next();
 };
 
-module.exports = { verifyToken, adminRequired, publicEndpoint };
+module.exports = { loginRequired, adminRequired, publicEndpoint };
