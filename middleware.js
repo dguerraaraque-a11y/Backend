@@ -206,12 +206,4 @@ app.post('/api/user/status', loginRequired, (req, res) => {
     res.json({ message: `Status updated to ${req.body.status}` });
 });
 
-// Iniciar el servidor si se ejecuta directamente
-if (require.main === module) {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-        console.log(`Servidor corriendo en http://localhost:${PORT}`);
-    });
-}
-
 module.exports = { app, loginRequired, adminRequired, publicEndpoint };
